@@ -41,10 +41,25 @@ async function login(body, lookup = findUser) {
 }
 
 function sessionResponse(user, secret, status = 200) {
-  const token = jwt.sign({ role: user.role }, secret, {
-    algorithm: 'HS256', subject: String(user._id), expiresIn: process.env.JWT_EXPIRES_IN || '30d',
-    issuer: 'bigvoraapi', audience: 'bigvora-app',
-  });
+  const configuredExpiry = String(process.env.JWT_EXPIRES_IN || '30d').trim();
+  const expiresIn = /^\d+(?:ms|s|m|h|d|w|y)?$/i.test(configuredExpiry)
+    ? configuredExpiry
+    : '30d';
+  let token;
+  try {
+    token = jwt.sign({ role: user.role }, secret, {
+      algorithm: 'HS256', subject: String(user._id), expiresIn,
+      issuer: 'bigvoraapi', audience: 'bigvora-app',
+    });
+  } catch {
+    return {
+      status: 503,
+      body: {
+        success: false,
+        message: 'Login is temporarily unavailable. Contact the administrator.',
+      },
+    };
+  }
   return { status, body: {
     success: true,
     message: status === 201 ? 'Account created successfully.' : 'Login successful.',
