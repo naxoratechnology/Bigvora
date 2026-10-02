@@ -1,0 +1,1 @@
+const r=require('express').Router(),c=require('./order.controller'),{requireAuth}=require('../../middleware/auth.middleware');r.get('/',requireAuth,c.list);r.post('/checkout',requireAuth,c.checkout);r.post('/verify-payment',requireAuth,c.verify);module.exports=r;

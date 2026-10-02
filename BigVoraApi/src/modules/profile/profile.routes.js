@@ -1,0 +1,3 @@
+const r=require('express').Router(),c=require('./profile.controller'),{requireAuth}=require('../../middleware/auth.middleware'),{rateLimit}=require('express-rate-limit');
+const passwordLimiter=rateLimit({windowMs:15*60*1000,limit:5,standardHeaders:'draft-8',legacyHeaders:false,message:{success:false,message:'Too many password change attempts. Try again in 15 minutes.'}});
+r.use(requireAuth);r.get('/',c.me);r.patch('/',c.update);r.post('/change-password',passwordLimiter,c.changePassword);r.post('/addresses',c.addAddress);r.patch('/addresses/:id',c.updateAddress);r.delete('/addresses/:id',c.removeAddress);r.post('/logout',c.logout);module.exports=r;
