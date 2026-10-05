@@ -28,6 +28,18 @@ const dateTime = value =>
         timeStyle: 'short',
       })
     : 'Not available';
+const dateOnly = value =>
+  value
+    ? new Date(value).toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      })
+    : 'Not available';
+const deliveryDuration = shipment => {
+  const days = Number(shipment?.deliveryDays);
+  return days > 0 ? `${days} ${days === 1 ? 'day' : 'days'}` : '';
+};
 const orderStatuses = [
   'confirmed',
   'processing',
@@ -333,13 +345,25 @@ export default function AdminOrderDetailsScreen({ navigation, route }) {
           />
           <InfoRow
             label={'Shipment status'}
-            value={words(order.shipment?.status)}
+            value={words(order.shipment?.currentStatus || order.shipment?.status)}
           />
           <InfoRow label={'AWB number'} value={order.shipment?.awb} />
           <InfoRow
             label={'Expected delivery'}
             value={order.shipment?.expectedDeliveryDate}
           />
+          {deliveryDuration(order.shipment) ? (
+            <>
+              <InfoRow
+                label={'Delivered on'}
+                value={dateOnly(order.shipment?.deliveredAt)}
+              />
+              <InfoRow
+                label={'Delivery time'}
+                value={`Delivered in ${deliveryDuration(order.shipment)}`}
+              />
+            </>
+          ) : null}
           <InfoRow
             label={'Last location'}
             value={order.shipment?.lastLocation}

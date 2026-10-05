@@ -15,6 +15,7 @@ export default function AdminCategoriesScreen({navigation}) {
   return <AdminPanelScreen loading={categoriesLoading} error={categoriesError}
     onRefresh={refreshCategories} title="Categories" subtitle="Organise your storefront"
     actionLabel="Add" items={items} searchPlaceholder="Search categories"
+    showItemImages
     onAdd={() => navigation.navigate('AddCategory')}
     onItemPress={item => navigation.navigate('AdminDetail',{type:'categories',id:item.id})}/>;
 }

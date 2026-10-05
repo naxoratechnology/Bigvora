@@ -250,6 +250,49 @@ async function verify(req, res, next) {
     next(e);
   }
 }
+async function cancel(req, res, next) {
+  try {
+    const order = await Order.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        customerId: req.user._id,
+        status: { $in: ["payment_pending", "confirmed", "processing"] },
+      },
+      {
+        $set: {
+          status: "cancelled",
+          cancelledAt: new Date(),
+          cancellationReason: "Cancelled by customer",
+        },
+      },
+      { new: true }
+    );
+    if (!order) {
+      return res.status(409).json({
+        success: false,
+        message: "This order can no longer be cancelled because it is being prepared or delivered.",
+      });
+    }
+    if (order.inventoryCommitted) {
+      await Promise.all(
+        order.items.map(item =>
+          Product.updateOne(
+            { _id: item.productId },
+            { $inc: { stock: item.quantity } }
+          )
+        )
+      );
+      order.inventoryCommitted = false;
+    }
+    order.shipment.message = order.shipment?.awb
+      ? "Cancelled by customer. Dispatch must be stopped with the delivery partner."
+      : "Cancelled by customer.";
+    await order.save();
+    return res.json({ success: true, data: { order: out(order) } });
+  } catch (error) {
+    return next(error);
+  }
+}
 async function list(req, res, next) {
   try {
     const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1),
@@ -274,6 +317,13 @@ async function list(req, res, next) {
       shipment: {
         status: order.shipment?.status || "not_ready",
         awb: order.shipment?.awb || "",
+        currentStatus: order.shipment?.currentStatus || "",
+        expectedDeliveryDate: order.shipment?.expectedDeliveryDate || "",
+        lastLocation: order.shipment?.lastLocation || "",
+        lastRemark: order.shipment?.lastRemark || "",
+        syncedAt: order.shipment?.syncedAt || null,
+        deliveredAt: order.shipment?.deliveredAt || null,
+        deliveryDays: order.shipment?.deliveryDays || null,
       },
       items: (order.items || []).map((item) => ({
         productId: String(item.productId),
@@ -313,4 +363,4 @@ async function list(req, res, next) {
     return next(error);
   }
 }
-module.exports = { checkout, verify, list };
+module.exports = { checkout, verify, cancel, list };

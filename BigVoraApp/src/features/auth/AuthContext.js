@@ -33,7 +33,13 @@ export function AuthProvider({children}) {
   }, []);
 
   const signIn = async credentials => {
-    const nextSession = await login(credentials);
+    let nextSession = await login(credentials);
+    try {
+      const data = await getProfile(nextSession.token);
+      nextSession = {...nextSession, user: normalizeUser(data.user)};
+    } catch {
+      // The session remains valid even if the optional profile refresh is offline.
+    }
     await saveSession(nextSession);
     setSession(nextSession);
     return nextSession.user;

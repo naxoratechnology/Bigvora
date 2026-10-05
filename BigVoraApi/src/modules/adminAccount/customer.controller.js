@@ -1,6 +1,8 @@
 const mongoose = require("mongoose");
 const User = require("../auth/user.model");
 const Order = require("../order/order.model");
+const Cart = require("../cart/cart.model");
+const Favourite = require("../favourite/favourite.model");
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -179,4 +181,52 @@ async function detail(req, res, next) {
   }
 }
 
-module.exports = { list, detail };
+async function updateStatus(req, res, next) {
+  try {
+    if (!mongoose.isObjectIdOrHexString(req.params.id)) {
+      return res.status(400).json({ success: false, message: "Invalid customer." });
+    }
+    if (typeof req.body?.isActive !== "boolean") {
+      return res.status(400).json({ success: false, message: "Select a valid account status." });
+    }
+    const customer = await User.findOneAndUpdate(
+      { _id: req.params.id, role: "customer" },
+      { $set: { isActive: req.body.isActive } },
+      { new: true }
+    ).lean();
+    if (!customer) {
+      return res.status(404).json({ success: false, message: "Customer not found." });
+    }
+    return res.json({ success: true, data: { customer: presentSummary(customer) } });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function remove(req, res, next) {
+  try {
+    if (!mongoose.isObjectIdOrHexString(req.params.id)) {
+      return res.status(400).json({ success: false, message: "Invalid customer." });
+    }
+    const customer = await User.findOne({ _id: req.params.id, role: "customer" }).lean();
+    if (!customer) {
+      return res.status(404).json({ success: false, message: "Customer not found." });
+    }
+    if (await Order.exists({ customerId: customer._id })) {
+      return res.status(409).json({
+        success: false,
+        message: "Customers with order history cannot be deleted. Deactivate the account instead.",
+      });
+    }
+    await Promise.all([
+      Cart.deleteOne({ userId: customer._id }),
+      Favourite.deleteMany({ userId: customer._id }),
+      User.deleteOne({ _id: customer._id, role: "customer" }),
+    ]);
+    return res.json({ success: true, data: { id: String(customer._id) } });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+module.exports = { list, detail, updateStatus, remove };

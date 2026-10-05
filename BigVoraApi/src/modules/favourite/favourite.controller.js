@@ -9,6 +9,8 @@ const present = product => ({
   categoryId: product.categoryId ? String(product.categoryId) : null,
   description: product.description,
   price: product.price,
+  mrp: product.mrp || product.price,
+  discountPercent: product.mrp > product.price ? Math.round(((product.mrp - product.price) / product.mrp) * 100) : 0,
   stock: product.stock,
   unit: product.unit,
   images: product.images || [],

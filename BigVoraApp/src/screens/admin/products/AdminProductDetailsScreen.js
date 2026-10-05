@@ -270,35 +270,6 @@ export default function AdminProductDetailsScreen({ navigation, route }) {
           <Text style={styles.description}>{product.description}</Text>
         </View>
 
-        {Boolean(product.rules?.length) && (
-          <>
-            <Text style={styles.sectionTitle}>Customer promises</Text>
-            <View style={styles.card}>
-              {product.rules.map((rule, index) => (
-                <View
-                  key={rule.id}
-                  style={[
-                    styles.ruleRow,
-                    index < product.rules.length - 1 && styles.divider,
-                  ]}
-                >
-                  <View style={styles.ruleIcon}>
-                    <Ionicons
-                      name={rule.icon || 'checkmark-circle-outline'}
-                      size={21}
-                      color={colors.accent}
-                    />
-                  </View>
-                  <View style={styles.ruleCopy}>
-                    <Text style={styles.ruleTitle}>{rule.title}</Text>
-                    <Text style={styles.ruleText}>{rule.description}</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </>
-        )}
-
         <Pressable
           disabled={deleting}
           onPress={remove}

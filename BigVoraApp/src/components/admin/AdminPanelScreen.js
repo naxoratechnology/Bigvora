@@ -7,6 +7,7 @@ import {
   Text,
   TextInput,
   View,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@react-native-vector-icons/ionicons/static';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -24,6 +25,7 @@ export default function AdminPanelScreen({
   onRefresh,
   loading = false,
   error = '',
+  showItemImages = false,
 }) {
   const [query, setQuery] = useState('');
   const visibleItems = useMemo(
@@ -86,11 +88,15 @@ export default function AdminPanelScreen({
             onPress={() => onItemPress?.(item)}
             style={styles.card}
           >
-            <View
-              style={[styles.icon, { backgroundColor: item.tone || '#FFF0E8' }]}
-            >
-              <Ionicons name={item.icon} size={23} color={colors.primary} />
-            </View>
+            {showItemImages && item.image ? (
+              <Image source={{uri: item.image}} style={styles.itemImage} />
+            ) : (
+              <View
+                style={[styles.icon, { backgroundColor: item.tone || '#FFF0E8' }]}
+              >
+                <Ionicons name={item.icon} size={23} color={colors.primary} />
+              </View>
+            )}
             <View style={styles.copy}>
               <Text numberOfLines={1} style={styles.itemTitle}>
                 {item.title}
@@ -197,6 +203,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 15,
   },
+  itemImage: {width: 48, height: 48, borderRadius: 15, backgroundColor: '#FFF0E8'},
   copy: { flex: 1, marginLeft: 12 },
   itemTitle: { color: colors.primary, fontSize: 14, fontWeight: '800' },
   itemSubtitle: { marginTop: 3, color: colors.textMuted, fontSize: 10 },

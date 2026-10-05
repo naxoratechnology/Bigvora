@@ -27,6 +27,13 @@ import {
 
 const money = value => `₹${value.toLocaleString('en-IN')}`;
 
+const onlinePaymentOptions = [
+  {id: 'upi', icon: 'phone-portrait-outline', title: 'UPI', subtitle: 'Google Pay, PhonePe, Paytm and more'},
+  {id: 'card', icon: 'card-outline', title: 'Credit / Debit Card', subtitle: 'Visa, Mastercard, RuPay and more'},
+  {id: 'netbanking', icon: 'business-outline', title: 'Netbanking', subtitle: 'Pay directly using your bank account'},
+  {id: 'wallet', icon: 'wallet-outline', title: 'Wallets', subtitle: 'Use an available wallet securely'},
+];
+
 export default function CheckoutScreen({ navigation }) {
   const {
     addresses,
@@ -44,6 +51,7 @@ export default function CheckoutScreen({ navigation }) {
   const canPlaceOrder = Boolean(
     selectedAddressId && subtotal >= MINIMUM_ORDER_VALUE,
   );
+  const isOnlinePayment = paymentMethod !== 'cod';
 
   const placeOrder = async () => {
     if (!token) {
@@ -55,7 +63,7 @@ export default function CheckoutScreen({ navigation }) {
     setSubmitting(true);
     try {
       const data = await createCheckout(token, {
-        paymentMethod,
+        paymentMethod: isOnlinePayment ? 'razorpay' : 'cod',
         address,
         items: items.map(item => ({
           productId: item.id,
@@ -63,7 +71,7 @@ export default function CheckoutScreen({ navigation }) {
         })),
       });
       let order = data.order;
-      if (paymentMethod === 'razorpay') {
+      if (isOnlinePayment) {
         const result = await RazorpayCheckout.open({
           key: data.payment.keyId,
           order_id: data.payment.razorpayOrderId,
@@ -88,11 +96,11 @@ export default function CheckoutScreen({ navigation }) {
       clearCart();
       navigation.replace('OrderSuccess', {
         orderId: order.orderNumber,
-        paymentMethod,
+        paymentMethod: isOnlinePayment ? 'razorpay' : 'cod',
       });
     } catch (error) {
       Alert.alert(
-        paymentMethod === 'razorpay'
+        isOnlinePayment
           ? 'Payment not completed'
           : 'Order not placed',
         error?.description ||
@@ -192,31 +200,28 @@ export default function CheckoutScreen({ navigation }) {
             {paymentMethod === 'cod' && <View style={styles.radioDot} />}
           </View>
         </Pressable>
-        <Pressable
-          onPress={() => setPaymentMethod('razorpay')}
-          style={[
-            styles.paymentCard,
-            paymentMethod === 'razorpay' && styles.selectedCard,
-          ]}
-        >
-          <View style={styles.paymentIcon}>
-            <Ionicons name="card-outline" size={25} color={colors.accent} />
-          </View>
-          <View style={styles.paymentCopy}>
-            <Text style={styles.paymentTitle}>Pay securely online</Text>
-            <Text style={styles.paymentSubtitle}>
-              UPI, cards, netbanking and wallets via Razorpay
-            </Text>
-          </View>
-          <View
-            style={[
-              styles.radio,
-              paymentMethod === 'razorpay' && styles.radioSelected,
-            ]}
-          >
-            {paymentMethod === 'razorpay' && <View style={styles.radioDot} />}
-          </View>
-        </Pressable>
+        <Text style={styles.onlineCaption}>Secure online payments via Razorpay</Text>
+        {onlinePaymentOptions.map(option => {
+          const selected = paymentMethod === option.id;
+          return (
+            <Pressable
+              key={option.id}
+              onPress={() => setPaymentMethod(option.id)}
+              style={[styles.paymentCard, selected && styles.selectedCard]}
+            >
+              <View style={styles.paymentIcon}>
+                <Ionicons name={option.icon} size={25} color={colors.accent} />
+              </View>
+              <View style={styles.paymentCopy}>
+                <Text style={styles.paymentTitle}>{option.title}</Text>
+                <Text style={styles.paymentSubtitle}>{option.subtitle}</Text>
+              </View>
+              <View style={[styles.radio, selected && styles.radioSelected]}>
+                {selected && <View style={styles.radioDot} />}
+              </View>
+            </Pressable>
+          );
+        })}
 
         <View
           style={[
@@ -284,7 +289,7 @@ export default function CheckoutScreen({ navigation }) {
               ? 'Processing...'
               : paymentMethod === 'cod'
               ? 'Place COD order'
-              : 'Pay securely'}
+              : `Continue with ${onlinePaymentOptions.find(option => option.id === paymentMethod)?.title || 'Razorpay'}`}
           </Text>
           <Ionicons
             name="shield-checkmark-outline"
@@ -429,6 +434,13 @@ const styles = StyleSheet.create({
   paymentCopy: { flex: 1, marginLeft: 12 },
   paymentTitle: { color: colors.primary, fontSize: 14, fontWeight: '800' },
   paymentSubtitle: { marginTop: 3, color: colors.textMuted, fontSize: 11 },
+  onlineCaption: {
+    marginTop: -4,
+    marginBottom: 10,
+    color: colors.textMuted,
+    fontSize: 10,
+    fontWeight: '600',
+  },
   deliveryNotice: {
     flexDirection: 'row',
     alignItems: 'center',

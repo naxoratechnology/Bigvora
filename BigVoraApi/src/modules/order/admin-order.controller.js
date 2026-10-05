@@ -45,6 +45,8 @@ const present = order => ({
     lastLocation: order.shipment?.lastLocation || '',
     lastRemark: order.shipment?.lastRemark || '',
     syncedAt: order.shipment?.syncedAt || null,
+    deliveredAt: order.shipment?.deliveredAt || null,
+    deliveryDays: order.shipment?.deliveryDays || null,
   },
   createdAt: order.createdAt,
   updatedAt: order.updatedAt,
@@ -141,6 +143,11 @@ const mapOrderStatus = courierStatus => {
   return '';
 };
 
+const validDate = value => {
+  const date = value ? new Date(value) : null;
+  return date && !Number.isNaN(date.getTime()) ? date : null;
+};
+
 async function syncShipment(req, res, next) {
   try {
     const order = await Order.findById(req.params.id);
@@ -201,6 +208,20 @@ async function syncShipment(req, res, next) {
     order.shipment.syncedAt = new Date();
     const syncedOrderStatus = mapOrderStatus(currentStatus);
     if (syncedOrderStatus) order.status = syncedOrderStatus;
+    if (syncedOrderStatus === 'delivered') {
+      const deliveredAt =
+        validDate(
+          tracking.delivered_date ||
+            tracking.delivery_date ||
+            tracking.last_scan_details?.scan_date ||
+            tracking.last_scan_details?.date,
+        ) || order.shipment.deliveredAt || new Date();
+      order.shipment.deliveredAt = deliveredAt;
+      order.shipment.deliveryDays = Math.max(
+        1,
+        Math.ceil((deliveredAt.getTime() - order.createdAt.getTime()) / 86400000),
+      );
+    }
     await order.save();
     await order.populate('customerId', 'fullName email mobile');
     return res.json({ success: true, data: { order: present(order) } });

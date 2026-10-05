@@ -25,10 +25,22 @@ const money = value =>
 const statusLabel = order => {
   if (order.status === 'cancelled') return 'Cancelled';
   if (order.status === 'payment_pending') return 'Payment pending';
+  if (order.status === 'delivered' || order.shipment?.status === 'delivered') {
+    const days = Number(order.shipment?.deliveryDays);
+    return days > 0
+      ? `Delivered in ${days} ${days === 1 ? 'day' : 'days'}`
+      : 'Delivered';
+  }
   if (order.shipment.status === 'booked') return 'Shipment booked';
   if (order.shipment.status === 'booking_failed') return 'Shipment pending';
   return 'Order confirmed';
 };
+const statusColor = order =>
+  order.status === 'cancelled'
+    ? '#C83E3E'
+    : order.status === 'delivered' || order.shipment?.status === 'delivered'
+      ? '#179A63'
+      : '#179A63';
 export default function OrdersScreen({ navigation }) {
   const { token } = useAuth(),
     [orders, setOrders] = useState([]),
@@ -77,8 +89,10 @@ export default function OrdersScreen({ navigation }) {
       </View>
       <View style={styles.divider} />
       <View style={styles.statusRow}>
-        <View style={styles.statusDot} />
-        <Text style={styles.status}>{statusLabel(item)}</Text>
+        <View style={[styles.statusDot, {backgroundColor: statusColor(item)}]} />
+        <Text style={[styles.status, {color: statusColor(item)}]}>
+          {statusLabel(item)}
+        </Text>
         <Text style={styles.method}>
           {item.payment.method === 'cod' ? 'COD' : 'PREPAID'}
         </Text>

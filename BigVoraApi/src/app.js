@@ -17,16 +17,19 @@ app.use(
 );
 app.use("/api/admin/categories", require("./modules/category/category.routes"));
 app.use("/api/admin/banners", require("./modules/banner/banner.routes"));
+app.use("/api/admin/notifications", require("./modules/notification/admin-notification.routes"));
 app.use("/api/admin/uploads", require("./modules/upload/upload.routes"));
 app.use(
   "/api/admin/customers",
   require("./modules/adminAccount/customer.routes")
 );
 app.use("/api/catalog", require("./modules/catalog/catalog.routes"));
+app.use("/api/cart", require("./modules/cart/cart.routes"));
 app.use("/api/orders", require("./modules/order/order.routes"));
 app.use("/api/admin/orders", require("./modules/order/admin-order.routes"));
 app.use("/api/profile", require("./modules/profile/profile.routes"));
 app.use("/api/favourites", require("./modules/favourite/favourite.routes"));
+app.use("/api/notifications", require("./modules/notification/notification.routes"));
 app.get("/", (req, res) => {
   res.status(200).type("html").send(`<!doctype html>
 <html lang="en">

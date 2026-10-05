@@ -108,10 +108,6 @@ export default function AddProductScreen({ navigation, route }) {
     categoriesError,
     refreshCategories,
     refreshProducts,
-    productRules,
-    productRulesLoading,
-    productRulesError,
-    refreshProductRules,
   } = useAdminData();
   const existing = products.find(item => item.id === route.params?.id);
   const editing = Boolean(route.params?.id);
@@ -126,7 +122,6 @@ export default function AddProductScreen({ navigation, route }) {
     reorderLevel: existing?.reorderLevel || '',
     unit: existing?.unit || '',
   });
-  const [ruleIds, setRuleIds] = useState(existing?.ruleIds || []);
   const [description, setDescription] = useState(existing?.description || '');
   const [version] = useState(existing?.version);
   const [saving, setSaving] = useState(false);
@@ -136,12 +131,6 @@ export default function AddProductScreen({ navigation, route }) {
   const [error, setError] = useState('');
   const set = (key, value) =>
     setValues(current => ({ ...current, [key]: value }));
-  const toggleRule = id =>
-    setRuleIds(current =>
-      current.includes(id)
-        ? current.filter(item => item !== id)
-        : [...current, id],
-    );
   const save = async () => {
     if (saving || uploading) return;
     if (categoriesLoading) {
@@ -183,7 +172,6 @@ export default function AddProductScreen({ navigation, route }) {
         ...values,
         description,
         images,
-        ruleIds,
         categoryId: category.id,
       };
       if (editing) await updateProduct(existing.id, payload, version);
@@ -350,55 +338,6 @@ export default function AddProductScreen({ navigation, route }) {
             placeholder="Product details for customers"
             multiline
           />
-          <Text style={styles.section}>Product rules</Text>
-          <Text style={styles.help}>
-            Select the customer promises that apply to this product.
-          </Text>
-          {productRulesLoading ? (
-            <Text style={styles.help}>Loading product rules...</Text>
-          ) : (
-            productRules
-              .filter(rule => rule.isActive || ruleIds.includes(rule.id))
-              .map(rule => (
-                <Pressable
-                  key={rule.id}
-                  onPress={() => toggleRule(rule.id)}
-                  style={[
-                    styles.ruleOption,
-                    ruleIds.includes(rule.id) && styles.ruleOptionActive,
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.checkbox,
-                      ruleIds.includes(rule.id) && styles.checkboxActive,
-                    ]}
-                  >
-                    {ruleIds.includes(rule.id) && (
-                      <Ionicons
-                        name="checkmark"
-                        size={15}
-                        color={colors.background}
-                      />
-                    )}
-                  </View>
-                  <Ionicons name={rule.icon} size={21} color={colors.accent} />
-                  <View style={styles.ruleCopy}>
-                    <Text style={styles.ruleTitle}>{rule.title}</Text>
-                    <Text style={styles.ruleDescription}>
-                      {rule.description}
-                    </Text>
-                  </View>
-                </Pressable>
-              ))
-          )}
-          {Boolean(productRulesError) && (
-            <Pressable onPress={refreshProductRules}>
-              <Text style={styles.errorText}>
-                {productRulesError} Tap to retry.
-              </Text>
-            </Pressable>
-          )}
           {Boolean(error) && (
             <View style={styles.error}>
               <Ionicons name="alert-circle-outline" size={17} color="#C83E3E" />

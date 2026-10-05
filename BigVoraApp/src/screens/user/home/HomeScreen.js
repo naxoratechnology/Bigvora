@@ -15,6 +15,12 @@ import { useCart } from '../../../features/cart/CartContext';
 import { request } from '../../../services/api/client';
 import colors from '../../../theme/colors';
 import CartQuantityControl from '../../../components/cart/CartQuantityControl';
+import {
+  FREE_DELIVERY_VALUE,
+  MINIMUM_ORDER_VALUE,
+  getFreeDeliveryRemaining,
+  getMinimumOrderRemaining,
+} from '../../../config/delivery';
 
 function SectionHeader({ title, onPress }) {
   return (
@@ -28,8 +34,14 @@ function SectionHeader({ title, onPress }) {
 }
 
 function HomeScreen({ navigation }) {
-  const { items, addToCart, updateQuantity, favourites, toggleFavourite } =
-    useCart();
+  const {
+    items,
+    subtotal,
+    addToCart,
+    updateQuantity,
+    favourites,
+    toggleFavourite,
+  } = useCart();
   const { width } = useWindowDimensions();
   const carouselRef = useRef(null);
   const [activeBanner, setActiveBanner] = useState(0);
@@ -54,9 +66,18 @@ function HomeScreen({ navigation }) {
       setProducts(
         data.products.map(x => ({
           ...x,
-          priceValue: x.price,
+          priceValue: Number(x.price),
           price: '₹' + Number(x.price).toLocaleString('en-IN'),
-          oldPrice: '',
+          oldPrice:
+            Number(x.mrp) > Number(x.price)
+              ? '₹' + Number(x.mrp).toLocaleString('en-IN')
+              : '',
+          discountPercent:
+            Number(x.mrp) > Number(x.price)
+              ? Math.round(
+                  ((Number(x.mrp) - Number(x.price)) / Number(x.mrp)) * 100,
+                )
+              : 0,
           icon: 'cube-outline',
           tint: '#EAF1FF',
         })),
@@ -91,6 +112,13 @@ function HomeScreen({ navigation }) {
   const openCategories = () => navigation.getParent()?.navigate('Categories');
   const openProduct = product =>
     navigation.navigate('ProductDetails', { product });
+  const freeDeliveryRemaining = getFreeDeliveryRemaining(subtotal);
+  const minimumOrderRemaining = getMinimumOrderRemaining(subtotal);
+  const deliveryProgress = Math.min(
+    100,
+    Math.round((subtotal / FREE_DELIVERY_VALUE) * 100),
+  );
+  const formatPrice = value => `\u20B9${Number(value || 0).toLocaleString('en-IN')}`;
 
   useEffect(() => {
     if (banners.length < 2) return undefined;
@@ -440,9 +468,13 @@ function HomeScreen({ navigation }) {
                     }
                   />
                 </Pressable>
-                <View style={styles.discountBadge}>
-                  <Text style={styles.discountText}>SALE</Text>
-                </View>
+                {product.discountPercent > 0 && (
+                  <View style={styles.discountBadge}>
+                    <Text style={styles.discountText}>
+                      {product.discountPercent}% OFF
+                    </Text>
+                  </View>
+                )}
               </View>
               <Text numberOfLines={2} style={styles.productName}>
                 {product.name}
@@ -511,40 +543,123 @@ function HomeScreen({ navigation }) {
               <Text numberOfLines={1} style={styles.compactName}>
                 {product.name}
               </Text>
-              <Text style={styles.compactPrice}>{product.price}</Text>
+              <View style={styles.compactPriceRow}>
+                <Text style={styles.compactPrice}>{product.price}</Text>
+                {Boolean(product.oldPrice) && (
+                  <Text style={styles.compactOldPrice}>{product.oldPrice}</Text>
+                )}
+                {product.discountPercent > 0 && (
+                  <Text style={styles.compactDiscount}>
+                    {product.discountPercent}% off
+                  </Text>
+                )}
+              </View>
             </Pressable>
           ))}
         </ScrollView>
+      </ScrollView>
 
-        <View style={styles.dealStrip}>
-          <View>
-            <Text style={styles.dealEyebrow}>LIMITED TIME</Text>
-            <Text style={styles.dealTitle}>Weekend deals</Text>
-            <Text style={styles.dealText}>
-              Extra savings on selected products
+      {items.length > 0 && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="View cart and delivery details"
+          onPress={() => navigation.getParent()?.navigate('Cart')}
+          style={[
+            styles.deliveryPrompt,
+            !freeDeliveryRemaining && styles.deliveryPromptUnlocked,
+          ]}
+        >
+          <View
+            style={[
+              styles.deliveryPromptIcon,
+              !freeDeliveryRemaining && styles.deliveryPromptIconUnlocked,
+            ]}
+          >
+            <Ionicons
+              name={freeDeliveryRemaining ? 'car-outline' : 'checkmark'}
+              size={21}
+              color={freeDeliveryRemaining ? colors.accent : '#179A63'}
+            />
+          </View>
+          <View style={styles.deliveryPromptCopy}>
+            <Text style={styles.deliveryPromptTitle}>
+              {freeDeliveryRemaining
+                ? `Add ${formatPrice(freeDeliveryRemaining)} more for FREE delivery`
+                : 'You unlocked FREE delivery'}
+            </Text>
+            <View style={styles.deliveryProgressTrack}>
+              <View
+                style={[
+                  styles.deliveryProgressFill,
+                  !freeDeliveryRemaining && styles.deliveryProgressFillUnlocked,
+                  { width: `${deliveryProgress}%` },
+                ]}
+              />
+            </View>
+            <Text style={styles.deliveryPromptNote}>
+              {minimumOrderRemaining
+                ? `Minimum order is ${formatPrice(MINIMUM_ORDER_VALUE)} · Add ${formatPrice(minimumOrderRemaining)} to checkout`
+                : 'Tap to view your cart and checkout'}
             </Text>
           </View>
-          <Pressable
-            onPress={() =>
-              navigation.navigate('CategoryProducts', {
-                products,
-                categoryId: 'deals',
-                title: 'Weekend deals',
-              })
-            }
-            style={styles.dealButton}
-          >
-            <Text style={styles.dealButtonText}>View deals</Text>
-          </Pressable>
-        </View>
-      </ScrollView>
+          <Ionicons
+            name="chevron-forward"
+            size={18}
+            color={colors.textMuted}
+            style={styles.deliveryPromptArrow}
+          />
+        </Pressable>
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  pageContent: { paddingBottom: 116 },
+  pageContent: { paddingBottom: 205 },
+  deliveryPrompt: {
+    position: 'absolute',
+    right: 20,
+    bottom: 103,
+    left: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 72,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#FFE0CF',
+    borderRadius: 18,
+    backgroundColor: '#FFF9F5',
+    elevation: 7,
+    shadowColor: '#10284A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+  },
+  deliveryPromptUnlocked: { borderColor: '#D9F0E4', backgroundColor: '#F4FCF8' },
+  deliveryPromptIcon: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 13,
+    backgroundColor: colors.background,
+  },
+  deliveryPromptIconUnlocked: { backgroundColor: '#E7F7EE' },
+  deliveryPromptCopy: { flex: 1, marginLeft: 10 },
+  deliveryPromptTitle: { color: colors.primary, fontSize: 11, fontWeight: '800' },
+  deliveryProgressTrack: {
+    height: 5,
+    marginTop: 7,
+    overflow: 'hidden',
+    borderRadius: 4,
+    backgroundColor: '#F1D8CB',
+  },
+  deliveryProgressFill: { height: '100%', borderRadius: 4, backgroundColor: colors.accent },
+  deliveryProgressFillUnlocked: { backgroundColor: '#179A63' },
+  deliveryPromptNote: { marginTop: 5, color: colors.textMuted, fontSize: 8.5, fontWeight: '500' },
+  deliveryPromptArrow: { marginLeft: 8 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -864,42 +979,28 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   compactPrice: {
-    marginTop: 5,
-    paddingHorizontal: 10,
     color: colors.accent,
     fontSize: 13,
     fontWeight: '800',
   },
-  dealStrip: {
+  compactPriceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginHorizontal: 20,
-    marginTop: 26,
-    padding: 18,
-    borderRadius: 20,
-    backgroundColor: colors.primary,
-  },
-  dealEyebrow: {
-    color: colors.accentLight,
-    fontSize: 8,
-    fontWeight: '800',
-    letterSpacing: 1.1,
-  },
-  dealTitle: {
     marginTop: 5,
-    color: colors.background,
-    fontSize: 18,
+    paddingHorizontal: 10,
+  },
+  compactOldPrice: {
+    marginLeft: 5,
+    color: colors.textMuted,
+    fontSize: 9,
+    textDecorationLine: 'line-through',
+  },
+  compactDiscount: {
+    marginLeft: 5,
+    color: '#179A63',
+    fontSize: 9,
     fontWeight: '800',
   },
-  dealText: { marginTop: 4, color: '#C8D3E2', fontSize: 9 },
-  dealButton: {
-    paddingHorizontal: 13,
-    paddingVertical: 10,
-    borderRadius: 12,
-    backgroundColor: colors.accent,
-  },
-  dealButtonText: { color: colors.background, fontSize: 10, fontWeight: '800' },
 });
 
 export default HomeScreen;

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -39,12 +40,18 @@ function DetailRow({ label, value, last = false }) {
 }
 
 export default function AdminCustomerDetailsScreen({ navigation, route }) {
-  const { customers, fetchCustomer } = useAdminData();
+  const {
+    customers,
+    fetchCustomer,
+    updateCustomerStatus,
+    deleteCustomer,
+  } = useAdminData();
   const cached = customers.find(item => item.id === route.params.id);
   const [customer, setCustomer] = useState(cached?.addresses ? cached : null);
   const [loading, setLoading] = useState(!customer);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
+  const [action, setAction] = useState('');
 
   const load = useCallback(
     async refresh => {
@@ -65,6 +72,64 @@ export default function AdminCustomerDetailsScreen({ navigation, route }) {
   useEffect(() => {
     load(false);
   }, [load]);
+
+  const changeAccountStatus = () => {
+    const nextIsActive = !customer.isActive;
+    Alert.alert(
+      nextIsActive ? 'Reactivate customer?' : 'Deactivate customer?',
+      nextIsActive
+        ? 'The customer will be able to sign in and shop again.'
+        : 'The customer will be signed out and cannot sign in until reactivated.',
+      [
+        {text: 'Cancel', style: 'cancel'},
+        {
+          text: nextIsActive ? 'Reactivate' : 'Deactivate',
+          style: nextIsActive ? 'default' : 'destructive',
+          onPress: async () => {
+            setAction('status');
+            setError('');
+            try {
+              const updated = await updateCustomerStatus(
+                customer.id,
+                nextIsActive,
+              );
+              setCustomer(current => ({...current, isActive: updated.isActive}));
+            } catch (requestError) {
+              setError(requestError.message);
+            } finally {
+              setAction('');
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const removeCustomer = () => {
+    Alert.alert(
+      'Delete customer?',
+      'This permanently removes the customer account. Accounts with order history cannot be deleted.',
+      [
+        {text: 'Cancel', style: 'cancel'},
+        {
+          text: 'Delete permanently',
+          style: 'destructive',
+          onPress: async () => {
+            setAction('delete');
+            setError('');
+            try {
+              await deleteCustomer(customer.id);
+              navigation.goBack();
+            } catch (requestError) {
+              setError(requestError.message);
+            } finally {
+              setAction('');
+            }
+          },
+        },
+      ],
+    );
+  };
 
   if (loading && !customer) {
     return (
@@ -176,6 +241,45 @@ export default function AdminCustomerDetailsScreen({ navigation, route }) {
               {customer.isActive ? 'Active account' : 'Inactive account'}
             </Text>
           </View>
+        </View>
+
+        <View style={styles.accountActions}>
+          <Pressable
+            disabled={Boolean(action)}
+            onPress={changeAccountStatus}
+            style={styles.statusAction}
+          >
+            {action === 'status' ? (
+              <ActivityIndicator size={'small'} color={colors.accent} />
+            ) : (
+              <Ionicons
+                name={customer.isActive ? 'pause-circle-outline' : 'play-circle-outline'}
+                size={18}
+                color={colors.accent}
+              />
+            )}
+            <Text style={styles.statusActionText}>
+              {action === 'status'
+                ? 'Updating...'
+                : customer.isActive
+                  ? 'Deactivate account'
+                  : 'Reactivate account'}
+            </Text>
+          </Pressable>
+          <Pressable
+            disabled={Boolean(action)}
+            onPress={removeCustomer}
+            style={styles.deleteAction}
+          >
+            {action === 'delete' ? (
+              <ActivityIndicator size={'small'} color={'#C83E3E'} />
+            ) : (
+              <Ionicons name={'trash-outline'} size={18} color={'#C83E3E'} />
+            )}
+            <Text style={styles.deleteActionText}>
+              {action === 'delete' ? 'Deleting...' : 'Delete customer'}
+            </Text>
+          </Pressable>
         </View>
 
         <View style={styles.stats}>
@@ -434,6 +538,31 @@ const styles = StyleSheet.create({
   },
   inactiveDot: { backgroundColor: '#CAD4E1' },
   accountText: { color: colors.background, fontSize: 8, fontWeight: '800' },
+  accountActions: {flexDirection: 'row', gap: 10, marginTop: 13},
+  statusAction: {
+    flex: 1,
+    height: 47,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.accent,
+    borderRadius: 14,
+    backgroundColor: colors.background,
+  },
+  statusActionText: {marginLeft: 6, color: colors.accent, fontSize: 10, fontWeight: '800'},
+  deleteAction: {
+    flex: 1,
+    height: 47,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#F0B9B9',
+    borderRadius: 14,
+    backgroundColor: '#FFF7F7',
+  },
+  deleteActionText: {marginLeft: 6, color: '#C83E3E', fontSize: 10, fontWeight: '800'},
   stats: { flexDirection: 'row', marginTop: 13, gap: 9 },
   statCard: {
     flex: 1,

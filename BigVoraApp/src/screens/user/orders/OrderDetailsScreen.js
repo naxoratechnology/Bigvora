@@ -1,5 +1,7 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   Image,
   Pressable,
   ScrollView,
@@ -9,6 +11,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@react-native-vector-icons/ionicons/static';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import {useAuth} from '../../../features/auth/AuthContext';
+import {cancelOrder} from '../../../services/orders/order.service';
 import colors from '../../../theme/colors';
 
 const money = value =>
@@ -22,6 +26,22 @@ const readable = value =>
   String(value || '')
     .replaceAll('_', ' ')
     .replace(/\b\w/g, letter => letter.toUpperCase());
+
+const dateOnly = value => {
+  const date = value ? new Date(value) : null;
+  return date && !Number.isNaN(date.getTime())
+    ? date.toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      })
+    : '';
+};
+
+const deliveryDuration = shipment => {
+  const days = Number(shipment?.deliveryDays);
+  return days > 0 ? `${days} ${days === 1 ? 'day' : 'days'}` : '';
+};
 
 function Row({ label, value, strong }) {
   return (
@@ -46,6 +66,9 @@ function Header({ navigation }) {
 
 export default function OrderDetailsScreen({ navigation, route }) {
   const order = route.params?.order;
+  const {token} = useAuth();
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState('');
   if (!order) {
     return (
       <SafeAreaView style={styles.container}>
@@ -64,6 +87,36 @@ export default function OrderDetailsScreen({ navigation, route }) {
   const address = order.address || {};
   const shipment = order.shipment || {};
   const payment = order.payment || {};
+  const canCancel = ['payment_pending', 'confirmed', 'processing'].includes(
+    order.status,
+  );
+  const cancel = () => {
+    if (cancelling) return;
+    Alert.alert(
+      'Cancel this order?',
+      'This action cannot be undone. Your reserved items will be returned to stock.',
+      [
+        {text: 'Keep order', style: 'cancel'},
+        {
+          text: 'Cancel order',
+          style: 'destructive',
+          onPress: async () => {
+            setCancelling(true);
+            setCancelError('');
+            try {
+              await cancelOrder(token, order.id);
+              Alert.alert('Order cancelled', 'Your order has been cancelled.');
+              navigation.goBack();
+            } catch (error) {
+              setCancelError(error.message || 'Unable to cancel this order.');
+            } finally {
+              setCancelling(false);
+            }
+          },
+        },
+      ],
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -162,13 +215,56 @@ export default function OrderDetailsScreen({ navigation, route }) {
         <View style={styles.card}>
           <Row
             label="Shipment"
-            value={readable(shipment.status || 'not ready')}
+            value={readable(shipment.currentStatus || shipment.status || 'not ready')}
             strong
           />
           {Boolean(shipment.awb) && (
             <Row label="AWB number" value={shipment.awb} />
           )}
+          {shipment.expectedDeliveryDate && !deliveryDuration(shipment) ? (
+            <Row
+              label="Expected delivery"
+              value={dateOnly(shipment.expectedDeliveryDate)}
+            />
+          ) : null}
+          {deliveryDuration(shipment) ? (
+            <>
+              <Row
+                label="Delivered on"
+                value={dateOnly(shipment.deliveredAt)}
+              />
+              <Row
+                label="Delivery time"
+                value={`Delivered in ${deliveryDuration(shipment)}`}
+              />
+            </>
+          ) : null}
+          {shipment.lastLocation ? (
+            <Row label="Last location" value={shipment.lastLocation} />
+          ) : null}
         </View>
+
+        {canCancel ? (
+          <>
+            {Boolean(cancelError) && (
+              <Text style={styles.cancelError}>{cancelError}</Text>
+            )}
+            <Pressable
+              disabled={cancelling}
+              onPress={cancel}
+              style={[styles.cancelButton, cancelling && styles.cancelDisabled]}
+            >
+              {cancelling ? (
+                <ActivityIndicator size="small" color="#C83E3E" />
+              ) : (
+                <Ionicons name="close-circle-outline" size={18} color="#C83E3E" />
+              )}
+              <Text style={styles.cancelButtonText}>
+                {cancelling ? 'Cancelling order...' : 'Cancel order'}
+              </Text>
+            </Pressable>
+          </>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -303,6 +399,30 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: 10,
     fontWeight: '700',
+  },
+  cancelError: {
+    marginTop: 14,
+    color: '#C83E3E',
+    fontSize: 11,
+    textAlign: 'center',
+  },
+  cancelButton: {
+    height: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 14,
+    borderWidth: 1,
+    borderColor: '#F0B9B9',
+    borderRadius: 14,
+    backgroundColor: '#FFF7F7',
+  },
+  cancelDisabled: {opacity: 0.65},
+  cancelButtonText: {
+    marginLeft: 7,
+    color: '#C83E3E',
+    fontSize: 12,
+    fontWeight: '800',
   },
   empty: {
     flex: 1,

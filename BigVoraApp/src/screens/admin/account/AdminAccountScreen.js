@@ -31,15 +31,22 @@ const menu = [
     icon: 'shield-checkmark-outline',
     route: 'ProductRules',
   },
+  {
+    title: 'Customer notifications',
+    subtitle: 'Publish announcements to the customer inbox',
+    icon: 'notifications-outline',
+    route: 'Notifications',
+  },
 ];
 export default function AdminAccountScreen({ navigation }) {
   const { user, signOut } = useAuth();
-  const { orders, customers, productRules, banners } = useAdminData();
+  const { orders, customers, productRules, banners, notifications } = useAdminData();
   const counts = {
     Orders: orders.length,
     Customers: customers.length,
     ProductRules: productRules.length,
     Banners: banners.length,
+    Notifications: notifications.length,
   };
   const open = route => navigation.getParent()?.navigate(route);
   const logout = async () => {

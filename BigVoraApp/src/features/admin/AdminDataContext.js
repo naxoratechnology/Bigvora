@@ -13,6 +13,7 @@ import * as ruleApi from '../../services/admin/product-rule.service';
 import * as bannerApi from '../../services/admin/banner.service';
 import * as orderApi from '../../services/admin/order.service';
 import * as customerApi from '../../services/admin/customer.service';
+import * as notificationApi from '../../services/admin/notification.service';
 
 const AdminDataContext = createContext(null);
 export function AdminDataProvider({ children }) {
@@ -47,6 +48,19 @@ export function AdminDataProvider({ children }) {
     },
     [token],
   );
+  const updateCustomerStatus = async (id, isActive) => {
+    const customer = await customerApi.updateCustomerStatus(token, id, isActive);
+    setCustomers(current =>
+      current.map(item =>
+        item.id === customer.id ? {...item, ...customer} : item,
+      ),
+    );
+    return customer;
+  };
+  const deleteCustomer = async id => {
+    await customerApi.deleteCustomer(token, id);
+    setCustomers(current => current.filter(item => item.id !== id));
+  };
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [ordersError, setOrdersError] = useState('');
@@ -99,6 +113,29 @@ export function AdminDataProvider({ children }) {
   const [banners, setBanners] = useState([]);
   const [bannersLoading, setBannersLoading] = useState(false);
   const [bannersError, setBannersError] = useState('');
+  const [notifications, setNotifications] = useState([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [notificationsError, setNotificationsError] = useState('');
+  const refreshNotifications = useCallback(async () => {
+    setNotificationsLoading(true);
+    setNotificationsError('');
+    try { setNotifications(await notificationApi.listNotifications(token)); }
+    catch (error) { setNotificationsError(error.message); }
+    finally { setNotificationsLoading(false); }
+  }, [token]);
+  useEffect(() => { if (token) refreshNotifications(); }, [token, refreshNotifications]);
+  const addNotification = async fields => {
+    const notification = await notificationApi.createNotification(token, fields);
+    setNotifications(current => [notification, ...current]);
+  };
+  const updateNotification = async (id, fields, version) => {
+    const notification = await notificationApi.updateNotification(token, id, fields, version);
+    setNotifications(current => current.map(item => item.id === id ? notification : item));
+  };
+  const deleteNotification = async id => {
+    await notificationApi.deleteNotification(token, id);
+    setNotifications(current => current.filter(item => item.id !== id));
+  };
   const refreshBanners = useCallback(async () => {
     setBannersLoading(true);
     setBannersError('');
@@ -295,6 +332,13 @@ export function AdminDataProvider({ children }) {
         banners,
         bannersLoading,
         bannersError,
+        notifications,
+        notificationsLoading,
+        notificationsError,
+        refreshNotifications,
+        addNotification,
+        updateNotification,
+        deleteNotification,
         refreshBanners,
         addBanner,
         updateBanner,
@@ -318,6 +362,8 @@ export function AdminDataProvider({ children }) {
         customersError,
         refreshCustomers,
         fetchCustomer,
+        updateCustomerStatus,
+        deleteCustomer,
         addProduct,
         updateProduct,
         deleteProduct,

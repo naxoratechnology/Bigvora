@@ -32,6 +32,15 @@ const mapProduct = product => ({
   price: money(product.price),
   oldPrice:
     Number(product.mrp) > Number(product.price) ? money(product.mrp) : '',
+  discountPercent:
+    Number(product.discountPercent) ||
+    (Number(product.mrp) > Number(product.price)
+      ? Math.round(
+          ((Number(product.mrp) - Number(product.price)) /
+            Number(product.mrp)) *
+            100,
+        )
+      : 0),
   icon: 'cube-outline',
   tint: '#EDF3FF',
 });
@@ -71,7 +80,7 @@ export default function SearchScreen({ navigation, route }) {
         setLoading(true);
         setProducts([]);
         setSuggestions([]);
-        setPagination(current => ({...current, total: 0, hasMore: false}));
+        setPagination(current => ({ ...current, total: 0, hasMore: false }));
       }
       setError('');
       try {

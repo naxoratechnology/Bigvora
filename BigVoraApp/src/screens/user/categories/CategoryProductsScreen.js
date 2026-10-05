@@ -22,6 +22,21 @@ const productTints = [
   '#F2F0FF',
   '#FFF7E5',
 ];
+const withPricing = product => {
+  const priceValue = Number(product.priceValue ?? product.price);
+  const mrp = Number(product.mrp || priceValue);
+  return {
+    ...product,
+    priceValue,
+    mrp,
+    oldPrice: mrp > priceValue ? '₹' + mrp.toLocaleString('en-IN') : '',
+    discountPercent:
+      Number(product.discountPercent) ||
+      (mrp > priceValue ? Math.round(((mrp - priceValue) / mrp) * 100) : 0),
+    rating: Number(product.rating) || 0,
+    newestRank: Number(product.newestRank) || 0,
+  };
+};
 
 function CategoryProductsScreen({ navigation, route }) {
   const { items, addToCart, updateQuantity, favourites, toggleFavourite } =
@@ -34,22 +49,27 @@ function CategoryProductsScreen({ navigation, route }) {
   const products = useMemo(
     () =>
       route.params?.products
-        ? route.params.products.filter(
-            product =>
-              ['popular', 'new', 'deals'].includes(route.params?.categoryId) ||
-              product.categoryId === route.params?.categoryId,
-          )
-        : productIcons.map((icon, index) => ({
-            id: `${route.params?.categoryId ?? 'product'}-${index}`,
-            name: `${title} ${index + 1}`,
-            price: `₹${799 + index * 250}`,
-            priceValue: 799 + index * 250,
-            oldPrice: `₹${1099 + index * 300}`,
-            rating: 4.3 + (index % 4) * 0.1,
-            newestRank: productIcons.length - index,
-            icon,
-            tint: productTints[index],
-          })),
+        ? route.params.products
+            .filter(
+              product =>
+                ['popular', 'new', 'deals'].includes(
+                  route.params?.categoryId,
+                ) || product.categoryId === route.params?.categoryId,
+            )
+            .map(withPricing)
+        : productIcons
+            .map((icon, index) => ({
+              id: `${route.params?.categoryId ?? 'product'}-${index}`,
+              name: `${title} ${index + 1}`,
+              price: `₹${799 + index * 250}`,
+              priceValue: 799 + index * 250,
+              oldPrice: `₹${1099 + index * 300}`,
+              rating: 4.3 + (index % 4) * 0.1,
+              newestRank: productIcons.length - index,
+              icon,
+              tint: productTints[index],
+            }))
+            .map(withPricing),
     [route.params?.categoryId, route.params?.products, title],
   );
 
@@ -243,6 +263,13 @@ function CategoryProductsScreen({ navigation, route }) {
                     }
                   />
                 </Pressable>
+                {product.discountPercent > 0 && (
+                  <View style={styles.discountBadge}>
+                    <Text style={styles.discountBadgeText}>
+                      {product.discountPercent}% OFF
+                    </Text>
+                  </View>
+                )}
               </View>
               <Text numberOfLines={2} style={styles.productName}>
                 {product.name}
@@ -252,7 +279,14 @@ function CategoryProductsScreen({ navigation, route }) {
                   {'\u20B9'}
                   {Number(product.priceValue).toLocaleString('en-IN')}
                 </Text>
-                <Text style={styles.oldPrice}>{product.oldPrice}</Text>
+                {Boolean(product.oldPrice) && (
+                  <Text style={styles.oldPrice}>{product.oldPrice}</Text>
+                )}
+                {product.discountPercent > 0 && (
+                  <Text style={styles.discount}>
+                    {product.discountPercent}% off
+                  </Text>
+                )}
               </View>
               <View style={styles.ratingRow}>
                 <Ionicons name="star" size={12} color="#F4A900" />
@@ -413,6 +447,20 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: colors.background,
   },
+  discountBadge: {
+    position: 'absolute',
+    left: 10,
+    bottom: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 7,
+    backgroundColor: colors.accent,
+  },
+  discountBadgeText: {
+    color: colors.background,
+    fontSize: 8,
+    fontWeight: '800',
+  },
   productName: {
     minHeight: 39,
     marginTop: 11,
@@ -432,6 +480,12 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 10,
     textDecorationLine: 'line-through',
+  },
+  discount: {
+    marginLeft: 6,
+    color: '#179A63',
+    fontSize: 9,
+    fontWeight: '800',
   },
   ratingRow: {
     flexDirection: 'row',

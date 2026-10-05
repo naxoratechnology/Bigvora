@@ -45,7 +45,7 @@ export default function LoginScreen({navigation}) {
           <Image source={require('../../assets/logo-transparent.png')} resizeMode="contain" style={styles.logo} />
           <Text style={styles.title}>Welcome back</Text>
           <Text style={styles.subtitle}>Sign in to continue shopping with Big Vora</Text>
-          <Text style={styles.adminHint}>Sign in with your customer or admin account</Text>
+          <Text style={styles.adminHint}>Securely access your Big Vora account</Text>
 
           <View style={styles.methodTabs}>
             {['mobile', 'email'].map(item => <Pressable key={item} onPress={() => switchMethod(item)} style={[styles.methodTab, method === item && styles.methodTabActive]}><Ionicons name={item === 'mobile' ? 'phone-portrait-outline' : 'mail-outline'} size={17} color={method === item ? colors.background : colors.textMuted} /><Text style={[styles.methodText, method === item && styles.methodTextActive]}>{item === 'mobile' ? 'Mobile' : 'Email'}</Text></Pressable>)}
