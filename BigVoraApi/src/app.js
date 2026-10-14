@@ -29,7 +29,10 @@ app.use("/api/orders", require("./modules/order/order.routes"));
 app.use("/api/admin/orders", require("./modules/order/admin-order.routes"));
 app.use("/api/profile", require("./modules/profile/profile.routes"));
 app.use("/api/favourites", require("./modules/favourite/favourite.routes"));
+app.use("/api/reviews", require("./modules/review/review.routes"));
 app.use("/api/notifications", require("./modules/notification/notification.routes"));
+app.use("/api/support-tickets", require("./modules/support/support-ticket.routes"));
+app.use("/api/admin/support-tickets", require("./modules/support/admin-support-ticket.routes"));
 app.get("/", (req, res) => {
   res.status(200).type("html").send(`<!doctype html>
 <html lang="en">

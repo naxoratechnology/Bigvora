@@ -190,6 +190,7 @@ export default function SearchScreen({ navigation, route }) {
             <Text style={styles.oldPrice}>{item.oldPrice}</Text>
           )}
         </View>
+        <View style={styles.ratingRow}><Ionicons name="star" size={12} color="#F4A900"/><Text style={styles.ratingText}>{Number(item.ratingAverage) ? Number(item.ratingAverage).toFixed(1) : 'New'}{Number(item.ratingCount) ? ` (${item.ratingCount})` : ''}</Text></View>
         <CartQuantityControl
           compact
           quantity={quantity}
@@ -648,6 +649,8 @@ const styles = StyleSheet.create({
     fontSize: 9,
     textDecorationLine: 'line-through',
   },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', marginTop: 5, paddingHorizontal: 10 },
+  ratingText: { marginLeft: 4, color: colors.textMuted, fontSize: 9, fontWeight: '700' },
   cartControl: { alignSelf: 'flex-end', marginTop: 8, marginRight: 9 },
   empty: { alignItems: 'center', paddingVertical: 60, paddingHorizontal: 25 },
   emptyIcon: {

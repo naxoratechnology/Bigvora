@@ -33,7 +33,8 @@ const withPricing = product => {
     discountPercent:
       Number(product.discountPercent) ||
       (mrp > priceValue ? Math.round(((mrp - priceValue) / mrp) * 100) : 0),
-    rating: Number(product.rating) || 0,
+    rating: Number(product.ratingAverage ?? product.rating) || 0,
+    ratingCount: Number(product.ratingCount) || 0,
     newestRank: Number(product.newestRank) || 0,
   };
 };

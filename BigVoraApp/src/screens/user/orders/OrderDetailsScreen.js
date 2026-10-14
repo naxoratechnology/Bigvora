@@ -13,6 +13,7 @@ import { Ionicons } from '@react-native-vector-icons/ionicons/static';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {useAuth} from '../../../features/auth/AuthContext';
 import {cancelOrder} from '../../../services/orders/order.service';
+import {rateProduct} from '../../../services/reviews/review.service';
 import colors from '../../../theme/colors';
 
 const money = value =>
@@ -69,6 +70,7 @@ export default function OrderDetailsScreen({ navigation, route }) {
   const {token} = useAuth();
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState('');
+  const [ratedItems, setRatedItems] = useState({});
   if (!order) {
     return (
       <SafeAreaView style={styles.container}>
@@ -116,6 +118,13 @@ export default function OrderDetailsScreen({ navigation, route }) {
         },
       ],
     );
+  };
+  const rateItem = async (item, rating) => {
+    try {
+      await rateProduct(token, item.productId, rating);
+      setRatedItems(current => ({...current, [item.productId]: rating}));
+      Alert.alert('Thanks for your rating', 'Your rating has been submitted.');
+    } catch (error) { Alert.alert('Rating unavailable', error.message); }
   };
 
   return (
@@ -171,6 +180,7 @@ export default function OrderDetailsScreen({ navigation, route }) {
                 </Text>
               </View>
               <Text style={styles.lineTotal}>{money(item.lineTotal)}</Text>
+              {order.status === 'delivered' && <View style={styles.rateItem}><Text style={styles.rateItemLabel}>{ratedItems[item.productId] ? 'Your rating' : 'Rate product'}</Text><View style={styles.rateStars}>{[1,2,3,4,5].map(value => <Pressable key={value} onPress={() => rateItem(item, value)}><Ionicons name={value <= (ratedItems[item.productId] || 0) ? 'star' : 'star-outline'} size={16} color="#F4A900" /></Pressable>)}</View></View>}
             </View>
           ))}
         </View>
@@ -356,6 +366,9 @@ const styles = StyleSheet.create({
   itemMeta: { marginTop: 4, color: colors.textMuted, fontSize: 9 },
   unitPrice: { marginTop: 3, color: colors.textMuted, fontSize: 9 },
   lineTotal: { color: colors.primary, fontSize: 12, fontWeight: '800' },
+  rateItem: { position: 'absolute', right: 0, bottom: 8, alignItems: 'flex-end' },
+  rateItemLabel: { marginBottom: 3, color: colors.textMuted, fontSize: 8, fontWeight: '700' },
+  rateStars: { flexDirection: 'row' },
   addressName: {
     marginTop: 15,
     color: colors.primary,

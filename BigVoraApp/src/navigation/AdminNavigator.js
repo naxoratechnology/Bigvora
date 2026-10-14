@@ -19,6 +19,7 @@ import ProductRulesScreen from '../screens/admin/account/ProductRulesScreen';
 import AdminAccountScreen from '../screens/admin/account/AdminAccountScreen';
 import AdminBannersScreen from '../screens/admin/banners/AdminBannersScreen';
 import AdminNotificationsScreen from '../screens/admin/notifications/AdminNotificationsScreen';
+import AdminSupportTicketsScreen from '../screens/admin/account/AdminSupportTicketsScreen';
 import { AdminDataProvider } from '../features/admin/AdminDataContext';
 import colors from '../theme/colors';
 
@@ -80,6 +81,7 @@ function AdminNavigator() {
         <Stack.Screen name="ProductRules" component={ProductRulesScreen} />
         <Stack.Screen name="Banners" component={AdminBannersScreen} />
         <Stack.Screen name="Notifications" component={AdminNotificationsScreen} />
+        <Stack.Screen name="SupportTickets" component={AdminSupportTicketsScreen} />
         <Stack.Screen
           name={'AdminOrderDetails'}
           component={AdminOrderDetailsScreen}

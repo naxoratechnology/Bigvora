@@ -37,6 +37,12 @@ const menu = [
     icon: 'notifications-outline',
     route: 'Notifications',
   },
+  {
+    title: 'Support tickets',
+    subtitle: 'Review customer help requests and update their status',
+    icon: 'help-buoy-outline',
+    route: 'SupportTickets',
+  },
 ];
 export default function AdminAccountScreen({ navigation }) {
   const { user, signOut } = useAuth();
@@ -47,6 +53,7 @@ export default function AdminAccountScreen({ navigation }) {
     ProductRules: productRules.length,
     Banners: banners.length,
     Notifications: notifications.length,
+    SupportTickets: '—',
   };
   const open = route => navigation.getParent()?.navigate(route);
   const logout = async () => {

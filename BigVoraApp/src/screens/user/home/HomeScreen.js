@@ -482,6 +482,7 @@ function HomeScreen({ navigation }) {
               <View style={styles.priceRow}>
                 <Text style={styles.productPrice}>{product.price}</Text>
                 <Text style={styles.oldPrice}>{product.oldPrice}</Text>
+                {Number(product.ratingCount) > 0 && <View style={styles.cardRating}><Ionicons name="star" size={10} color="#F6A21A"/><Text style={styles.cardRatingText}>{Number(product.ratingAverage).toFixed(1)}</Text></View>}
               </View>
               <CartQuantityControl
                 compact
@@ -545,6 +546,7 @@ function HomeScreen({ navigation }) {
               </Text>
               <View style={styles.compactPriceRow}>
                 <Text style={styles.compactPrice}>{product.price}</Text>
+                {Number(product.ratingCount) > 0 && <View style={styles.cardRating}><Ionicons name="star" size={10} color="#F6A21A"/><Text style={styles.cardRatingText}>{Number(product.ratingAverage).toFixed(1)}</Text></View>}
                 {Boolean(product.oldPrice) && (
                   <Text style={styles.compactOldPrice}>{product.oldPrice}</Text>
                 )}
@@ -943,6 +945,8 @@ const styles = StyleSheet.create({
     fontSize: 10,
     textDecorationLine: 'line-through',
   },
+  cardRating: { flexDirection: 'row', alignItems: 'center', marginLeft: 6 },
+  cardRatingText: { marginLeft: 2, color: colors.textMuted, fontSize: 9, fontWeight: '700' },
   addButton: { position: 'absolute', right: 9, bottom: 8 },
   compactRow: { paddingHorizontal: 16 },
   compactCard: {

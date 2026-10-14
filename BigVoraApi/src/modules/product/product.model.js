@@ -32,6 +32,8 @@ const productSchema = new mongoose.Schema(
       enum: ["Piece", "Kg", "Gram", "Litre", "Pack", "Bag", "Box"],
     },
     ruleIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "ProductRule" }],
+    ratingAverage: { type: Number, default: 0, min: 0, max: 5 },
+    ratingCount: { type: Number, default: 0, min: 0 },
     lastStockReason: { type: String, maxlength: 200 },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
