@@ -27,4 +27,5 @@ export async function register({name, identifier, password, confirmPassword, otp
   return sessionFromResponse(data);
 }
 export async function requestOtp(mobile,purpose){return post('/auth/otp/request',{mobile:mobile.trim(),purpose});}
+export async function resetPassword({mobile,password,confirmPassword,otp}){return post('/auth/password/reset',{mobile:mobile.trim(),password,confirmPassword,otp});}
 function identityPayload(identifier) { if(typeof identifier!=='string'||!/^\d{10}$/.test(identifier.trim()))throw new Error('Enter a valid 10-digit mobile number.');return {mobile:identifier.trim()}; }

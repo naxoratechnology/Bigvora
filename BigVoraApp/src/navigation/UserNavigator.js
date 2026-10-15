@@ -12,6 +12,7 @@ import OrderDetailsScreen from '../screens/user/orders/OrderDetailsScreen';
 import AddressesScreen from '../screens/user/profile/AddressesScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
+import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import NotificationsScreen from '../screens/user/home/NotificationsScreen';
 import ProductDetailsScreen from '../screens/user/products/ProductDetailsScreen';
 import EditProfileScreen from '../screens/user/profile/EditProfileScreen';
@@ -40,6 +41,7 @@ function UserNavigator() {
       <Stack.Screen name="OrderSuccess" component={OrderSuccessScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
       <Stack.Screen name="Orders" component={OrdersScreen} />
       <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} />
       <Stack.Screen name="Favourites" component={FavouritesScreen} />
