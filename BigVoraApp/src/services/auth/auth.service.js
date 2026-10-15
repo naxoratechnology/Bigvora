@@ -4,8 +4,8 @@ export async function logout(token) {
   await request('/profile/logout', {method: 'POST', token});
 }
 
-export async function login({identifier, method, password}) {
-  const data = await post('/auth/login', {...identityPayload(identifier, method), password});
+export async function login({identifier, password, otp}) {
+  const data = await post('/auth/login', {...identityPayload(identifier), password, otp});
   return sessionFromResponse(data);
 }
 
@@ -20,15 +20,11 @@ function sessionFromResponse(data) {
     user: {...data.user, name: data.user.fullName, phone: data.user.mobile},
   };
 }
-export async function register({name, identifier, method, password, confirmPassword}) {
+export async function register({name, identifier, password, confirmPassword, otp}) {
   const data = await post('/auth/register', {
-    fullName: name.trim(), ...identityPayload(identifier, method), password, confirmPassword,
+    fullName: name.trim(), ...identityPayload(identifier), password, confirmPassword, otp,
   });
   return sessionFromResponse(data);
 }
-function identityPayload(identifier, method) {
-  if (!['email', 'mobile'].includes(method) || typeof identifier !== 'string') {
-    throw new Error('Select email or mobile and enter your account details.');
-  }
-  return method === 'mobile' ? {mobile: identifier.trim()} : {email: identifier.trim().toLowerCase()};
-}
+export async function requestOtp(mobile,purpose){return post('/auth/otp/request',{mobile:mobile.trim(),purpose});}
+function identityPayload(identifier) { if(typeof identifier!=='string'||!/^\d{10}$/.test(identifier.trim()))throw new Error('Enter a valid 10-digit mobile number.');return {mobile:identifier.trim()}; }

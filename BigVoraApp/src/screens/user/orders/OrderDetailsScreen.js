@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -71,6 +72,9 @@ export default function OrderDetailsScreen({ navigation, route }) {
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState('');
   const [ratedItems, setRatedItems] = useState({});
+  const [ratingItem, setRatingItem] = useState(null);
+  const [selectedRating, setSelectedRating] = useState(0);
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
   if (!order) {
     return (
       <SafeAreaView style={styles.container}>
@@ -120,12 +124,17 @@ export default function OrderDetailsScreen({ navigation, route }) {
     );
   };
   const rateItem = async (item, rating) => {
+    setRatingSubmitting(true);
     try {
       await rateProduct(token, item.productId, rating);
       setRatedItems(current => ({...current, [item.productId]: rating}));
       Alert.alert('Thanks for your rating', 'Your rating has been submitted.');
+      setRatingItem(null);
+      setSelectedRating(0);
     } catch (error) { Alert.alert('Rating unavailable', error.message); }
+    finally { setRatingSubmitting(false); }
   };
+  const openRating = item => { setRatingItem(item); setSelectedRating(ratedItems[item.productId] || 0); };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -180,7 +189,7 @@ export default function OrderDetailsScreen({ navigation, route }) {
                 </Text>
               </View>
               <Text style={styles.lineTotal}>{money(item.lineTotal)}</Text>
-              {order.status === 'delivered' && <View style={styles.rateItem}><Text style={styles.rateItemLabel}>{ratedItems[item.productId] ? 'Your rating' : 'Rate product'}</Text><View style={styles.rateStars}>{[1,2,3,4,5].map(value => <Pressable key={value} onPress={() => rateItem(item, value)}><Ionicons name={value <= (ratedItems[item.productId] || 0) ? 'star' : 'star-outline'} size={16} color="#F4A900" /></Pressable>)}</View></View>}
+              {order.status === 'delivered' && <Pressable onPress={() => openRating(item)} style={styles.rateItem}><Ionicons name="star-outline" size={15} color={colors.accent}/><Text style={styles.rateItemLabel}>{ratedItems[item.productId] ? 'Edit rating' : 'Rate product'}</Text></Pressable>}
             </View>
           ))}
         </View>
@@ -276,6 +285,7 @@ export default function OrderDetailsScreen({ navigation, route }) {
           </>
         ) : null}
       </ScrollView>
+      <Modal transparent visible={Boolean(ratingItem)} animationType="fade" onRequestClose={() => setRatingItem(null)}><View style={styles.ratingOverlay}><View style={styles.ratingSheet}><Pressable onPress={() => setRatingItem(null)} style={styles.closeRating}><Ionicons name="close" size={21} color={colors.textMuted}/></Pressable><View style={styles.ratingIcon}><Ionicons name="star" size={30} color="#F4A900"/></View><Text style={styles.ratingTitle}>Rate your purchase</Text><Text numberOfLines={2} style={styles.ratingProduct}>{ratingItem?.name}</Text><Text style={styles.ratingQuestion}>How would you rate this product?</Text><View style={styles.largeStars}>{[1,2,3,4,5].map(value=><Pressable key={value} onPress={() => setSelectedRating(value)} hitSlop={8}><Ionicons name={value<=selectedRating?'star':'star-outline'} size={42} color="#F4A900"/></Pressable>)}</View><Text style={styles.ratingCaption}>{selectedRating ? ['','Poor','Fair','Good','Very good','Excellent'][selectedRating] : 'Tap a star to choose your rating'}</Text><Pressable disabled={!selectedRating || ratingSubmitting} onPress={() => rateItem(ratingItem, selectedRating)} style={[styles.submitRating,(!selectedRating || ratingSubmitting)&&styles.submitRatingDisabled]}>{ratingSubmitting?<ActivityIndicator color={colors.background}/>:<Text style={styles.submitRatingText}>Submit rating</Text>}</Pressable></View></View></Modal>
     </SafeAreaView>
   );
 }
@@ -366,9 +376,20 @@ const styles = StyleSheet.create({
   itemMeta: { marginTop: 4, color: colors.textMuted, fontSize: 9 },
   unitPrice: { marginTop: 3, color: colors.textMuted, fontSize: 9 },
   lineTotal: { color: colors.primary, fontSize: 12, fontWeight: '800' },
-  rateItem: { position: 'absolute', right: 0, bottom: 8, alignItems: 'flex-end' },
-  rateItemLabel: { marginBottom: 3, color: colors.textMuted, fontSize: 8, fontWeight: '700' },
-  rateStars: { flexDirection: 'row' },
+  rateItem: { position: 'absolute', right: 0, bottom: 6, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 9, paddingVertical: 6, borderRadius: 10, backgroundColor: '#FFF0E8' },
+  rateItemLabel: { marginLeft: 4, color: colors.accent, fontSize: 9, fontWeight: '800' },
+  ratingOverlay: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#10284A99' },
+  ratingSheet: { width: '100%', alignItems: 'center', padding: 24, borderRadius: 24, backgroundColor: colors.background },
+  closeRating: { position: 'absolute', top: 12, right: 12, padding: 8 },
+  ratingIcon: { width: 60, height: 60, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: '#FFF5DE' },
+  ratingTitle: { marginTop: 14, color: colors.primary, fontSize: 20, fontWeight: '800' },
+  ratingProduct: { marginTop: 7, color: colors.textMuted, fontSize: 12, textAlign: 'center' },
+  ratingQuestion: { marginTop: 20, color: colors.primary, fontSize: 13, fontWeight: '700' },
+  largeStars: { flexDirection: 'row', marginTop: 12 },
+  ratingCaption: { minHeight: 18, marginTop: 7, color: colors.accent, fontSize: 11, fontWeight: '700' },
+  submitRating: { width: '100%', height: 50, alignItems: 'center', justifyContent: 'center', marginTop: 17, borderRadius: 15, backgroundColor: colors.accent },
+  submitRatingDisabled: { opacity: 0.45 },
+  submitRatingText: { color: colors.background, fontSize: 14, fontWeight: '800' },
   addressName: {
     marginTop: 15,
     color: colors.primary,

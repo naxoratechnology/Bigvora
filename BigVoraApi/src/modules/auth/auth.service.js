@@ -4,15 +4,7 @@ const jwt = require('jsonwebtoken');
 // Used for unknown emails too, so both failure paths perform a password check.
 const dummyHash = bcrypt.hashSync('not-a-real-account-password', 12);
 
-function readIdentity(body) {
-  if (!body || (body.email !== undefined && body.mobile !== undefined)) return null;
-  if (body.mobile !== undefined) {
-    if (typeof body.mobile !== 'string' || !/^\d{10}$/.test(body.mobile.trim())) return null;
-    return { mobile: body.mobile.trim() };
-  }
-  const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
-  return /^\S+@\S+\.\S+$/.test(email) && email.length <= 254 ? { email } : null;
-}
+function readIdentity(body) { if (!body || typeof body.mobile !== 'string' || !/^\d{10}$/.test(body.mobile.trim())) return null; return {mobile:body.mobile.trim()}; }
 
 async function findUser(identity) {
   // Load only after the server has connected to MongoDB.
@@ -25,7 +17,7 @@ async function login(body, lookup = findUser) {
   const password = body?.password;
   if (!identity ||
       typeof password !== 'string' || !password.length || Buffer.byteLength(password, 'utf8') > 72) {
-    return { status: 400, body: { success: false, message: 'Provide a valid email or 10-digit mobile number and password.' } };
+    return { status: 400, body: { success: false, message: 'Provide a valid 10-digit mobile number and password.' } };
   }
   const secret = process.env.JWT_SECRET;
   if (!secret || Buffer.byteLength(secret, 'utf8') < 32) {
@@ -34,7 +26,7 @@ async function login(body, lookup = findUser) {
   const user = await lookup(identity);
   const matches = await bcrypt.compare(password, user?.password || dummyHash);
   if (!user || !matches || user.isActive !== true || !['admin', 'customer'].includes(user.role)) {
-    return { status: 401, body: { success: false, message: 'Invalid email/mobile or password.' } };
+    return { status: 401, body: { success: false, message: 'Invalid mobile number or password.' } };
   }
   return sessionResponse(user, secret);
 
@@ -73,8 +65,8 @@ function sessionResponse(user, secret, status = 200) {
 
 async function register(body, suppliedModel) {
   if (!body || typeof body !== 'object' || Array.isArray(body) ||
-      Object.keys(body).some(key => !['fullName', 'email', 'mobile', 'password', 'confirmPassword'].includes(key))) {
-    return { status: 400, body: { success: false, message: 'Provide full name, email or mobile, password and confirm password only.' } };
+      Object.keys(body).some(key => !['fullName', 'mobile', 'password', 'confirmPassword','otp'].includes(key))) {
+    return { status: 400, body: { success: false, message: 'Provide full name, mobile, password and confirm password only.' } };
   }
   const fullName = typeof body.fullName === 'string' ? body.fullName.trim() : '';
   const identity = readIdentity(body);

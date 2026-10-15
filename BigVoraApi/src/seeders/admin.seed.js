@@ -4,21 +4,22 @@ const { connectDatabase, disconnectDatabase } = require('../config/database');
 
 function readAdminCredentials() {
   const fullName = (process.env.ADMIN_NAME || 'Big Vora Admin').trim();
-  const email = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+  const mobile = (process.env.ADMIN_MOBILE || '8292472853').trim();
   const password = process.env.ADMIN_PASSWORD || '';
   if (!fullName || fullName.length > 100) throw new Error('ADMIN_NAME must contain 1 to 100 characters.');
-  if (!/^\S+@\S+\.\S+$/.test(email)) throw new Error('Set a valid ADMIN_EMAIL in .env.');
+  if (!/^\d{10}$/.test(mobile)) throw new Error('Set a valid ADMIN_MOBILE in .env.');
   if (password.length < 12 || Buffer.byteLength(password, 'utf8') > 72) {
     throw new Error('ADMIN_PASSWORD must contain at least 12 characters and no more than 72 UTF-8 bytes.');
   }
-  return { fullName, email, password };
+  return { fullName, mobile, password };
 }
 
 async function seedAdmin(credentials, model) {
-  await model.init(); // Ensure the unique email index exists before inserting.
-  const existing = await model.findOne({ email: credentials.email });
+  await model.init();
+  const existing = await model.findOne({$or:[{mobile:credentials.mobile},{email:(process.env.ADMIN_EMAIL||'').trim().toLowerCase()}]});
   if (existing) {
-    if (existing.role !== 'admin') throw new Error('This email belongs to a non-admin user; seeding will not promote it.');
+    if (existing.role !== 'admin') throw new Error('This mobile number belongs to a non-admin user; seeding will not promote it.');
+    if (existing.mobile !== credentials.mobile) { existing.mobile=credentials.mobile; await existing.save(); return 'Admin mobile number updated successfully.'; }
     return 'Admin already exists; no account fields or password changed.';
   }
   const password = await bcrypt.hash(credentials.password, 12);
@@ -26,8 +27,8 @@ async function seedAdmin(credentials, model) {
     await model.create({ ...credentials, password, role: 'admin', isActive: true });
   } catch (error) {
     if (error.code !== 11000) throw error;
-    const concurrent = await model.findOne({ email: credentials.email });
-    if (concurrent?.role !== 'admin') throw new Error('Email conflict; no existing account was modified.');
+    const concurrent = await model.findOne({ mobile: credentials.mobile });
+    if (concurrent?.role !== 'admin') throw new Error('Mobile conflict; no existing account was modified.');
     return 'Admin already exists; no account fields or password changed.';
   }
   return 'Admin account created successfully.';
