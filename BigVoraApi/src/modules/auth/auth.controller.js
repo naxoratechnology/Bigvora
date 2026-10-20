@@ -1,5 +1,5 @@
 const { login, register } = require('./auth.service');
-const {sendOtp,verifyOtp}=require('./otp.service');
+const {sendOtp,verifyOtp,temporaryOtpEnabled}=require('./otp.service');
 
 async function loginController(req, res, next) {
   res.set('Cache-Control', 'no-store');
@@ -20,7 +20,7 @@ async function registerController(req, res, next) {
     return res.status(result.status).json(result.body);
   } catch (error) { return next(error); }
 }
-async function requestOtpController(req,res,next){res.set('Cache-Control','no-store');try{await sendOtp(req.body?.mobile,req.body?.purpose);return res.json({success:true,data:{message:'OTP sent successfully.'}});}catch(error){return next(error);}}
+async function requestOtpController(req,res,next){res.set('Cache-Control','no-store');try{await sendOtp(req.body?.mobile,req.body?.purpose);return res.json({success:true,data:{message:temporaryOtpEnabled()?'Use temporary code 123456. No SMS was sent.':'OTP sent successfully.',mode:temporaryOtpEnabled()?'temporary':'sms'}});}catch(error){return next(error);}}
 async function resetPasswordController(req,res,next){try{const {mobile,otp,password,confirmPassword}=req.body||{};await verifyOtp(mobile,'reset',otp);if(typeof password!=='string'||password.length<8||password!==confirmPassword)return res.status(400).json({success:false,message:'Enter matching passwords of at least 8 characters.'});const bcrypt=require('bcryptjs');const User=require('./user.model');const user=await User.findOne({mobile:mobile?.trim(),isActive:true});if(!user)return res.status(404).json({success:false,message:'Account not found.'});user.password=await bcrypt.hash(password,12);await user.save();return res.json({success:true,data:{}});}catch(error){return next(error);}}
 async function logoutController(req, res, next) {
   try {
