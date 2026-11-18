@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,9 +10,8 @@ import { Ionicons } from '@react-native-vector-icons/ionicons/static';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCart } from '../../../features/cart/CartContext';
 import colors from '../../../theme/colors';
-import CartQuantityControl from '../../../components/cart/CartQuantityControl';
+import ProductCard from '../../../components/product/ProductCard';
 
-const money = value => '\u20B9' + Number(value || 0).toLocaleString('en-IN');
 export default function FavouritesScreen({ navigation }) {
   const { items, favourites, toggleFavourite, addToCart, updateQuantity } =
     useCart();
@@ -32,74 +30,16 @@ export default function FavouritesScreen({ navigation }) {
             const quantity =
               items.find(cartItem => cartItem.id === item.id)?.quantity || 0;
             return (
-              <View key={item.id} style={styles.card}>
-                <View
-                  style={[
-                    styles.visual,
-                    { backgroundColor: item.tint ?? '#EDF3FF' },
-                  ]}
-                >
-                  <Pressable
-                    accessibilityLabel={'View ' + item.name}
-                    onPress={() =>
-                      navigation.navigate('ProductDetails', { product: item })
-                    }
-                    style={styles.productTap}
-                  >
-                    {item.images?.[0] ? (
-                      <Image
-                        source={{ uri: item.images[0] }}
-                        resizeMode="contain"
-                        style={styles.image}
-                      />
-                    ) : (
-                      <Ionicons
-                        name={item.icon ?? 'bag'}
-                        size={52}
-                        color={colors.primaryLight}
-                      />
-                    )}
-                  </Pressable>
-                  <Pressable
-                    accessibilityLabel={
-                      'Remove ' + item.name + ' from favourites'
-                    }
-                    onPress={() => toggleFavourite(item)}
-                    style={styles.heart}
-                  >
-                    <Ionicons name="heart" size={19} color={colors.accent} />
-                  </Pressable>
-                </View>
-                <Pressable
-                  onPress={() =>
-                    navigation.navigate('ProductDetails', { product: item })
-                  }
-                >
-                  <Text numberOfLines={2} style={styles.name}>
-                    {item.name}
-                  </Text>
-                </Pressable>
-                <View style={styles.priceRow}>
-                  <View style={styles.priceCopy}>
-                    <Text style={styles.price}>{money(item.priceValue)}</Text>
-                    {Number(item.mrp) > Number(item.priceValue) && (
-                      <Text style={styles.oldPrice}>{money(item.mrp)}</Text>
-                    )}
-                    {item.discountPercent > 0 && (
-                      <Text style={styles.discount}>
-                        {item.discountPercent}% off
-                      </Text>
-                    )}
-                  </View>
-                  <CartQuantityControl
-                    compact
-                    quantity={quantity}
-                    onIncrease={() => addToCart(item)}
-                    onDecrease={() => updateQuantity(item.id, -1)}
-                    style={styles.cartControl}
-                  />
-                </View>
-              </View>
+              <ProductCard
+                key={item.id}
+                product={item}
+                onPress={() => navigation.navigate('ProductDetails', {product: item})}
+                isFavourite
+                onToggleFavourite={() => toggleFavourite(item)}
+                quantity={quantity}
+                onIncrease={() => addToCart(item)}
+                onDecrease={() => updateQuantity(item.id, -1)}
+              />
             );
           })}
         </ScrollView>

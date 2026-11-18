@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -9,12 +9,17 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@react-native-vector-icons/ionicons/static';
+import {useFocusEffect} from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../../features/auth/AuthContext';
 import { getDashboard } from '../../../services/admin/dashboard.service';
 import colors from '../../../theme/colors';
 
 const money = value => `₹${Number(value || 0).toLocaleString('en-IN')}`;
+const profitMoney = value =>
+  value == null
+    ? '—'
+    : `${Number(value) < 0 ? '-' : ''}₹${Math.abs(Number(value)).toLocaleString('en-IN')}`;
 const words = value =>
   String(value || 'Pending')
     .replaceAll('_', ' ')
@@ -43,9 +48,9 @@ export default function AdminDashboardScreen({ navigation }) {
     [token],
   );
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     if (token) load(false);
-  }, [token, load]);
+  }, [token, load]));
 
   const chartHeights = useMemo(() => {
     const values = dashboard?.salesChart?.map(item => Number(item.value)) || [];
@@ -75,6 +80,20 @@ export default function AdminDashboardScreen({ navigation }) {
       change: `${today.orders || 0} today`,
       icon: 'bag-handle-outline',
       tone: '#FFF0E8',
+    },
+    {
+      label: 'Today profit',
+      value: profitMoney(today.profit),
+      change: today.profit == null ? 'Cost unavailable' : 'Product sales − cost',
+      icon: 'trending-up-outline',
+      tone: '#EAF7F1',
+    },
+    {
+      label: 'Total profit',
+      value: profitMoney(totals.profit),
+      change: totals.profit == null ? 'Cost unavailable' : 'Product sales − cost',
+      icon: 'analytics-outline',
+      tone: '#EAF1FF',
     },
     {
       label: 'Products',
@@ -181,6 +200,13 @@ export default function AdminDashboardScreen({ navigation }) {
                 </View>
               ))}
             </View>
+            <Text style={styles.profitNote}>
+              Estimated gross profit from active orders: product sales minus
+              product cost, before delivery, shipping and payment charges.
+              {totals.historicalCostEstimate
+                ? ' Older orders use current product costs and are estimates.'
+                : ''}
+            </Text>
 
             <View style={styles.catalogueRow}>
               <View style={styles.catalogueItem}>
@@ -379,6 +405,13 @@ const styles = StyleSheet.create({
     color: colors.accent,
     fontSize: 10,
     fontWeight: '700',
+  },
+  profitNote: {
+    marginTop: 10,
+    paddingHorizontal: 3,
+    color: colors.textMuted,
+    fontSize: 9,
+    lineHeight: 14,
   },
   catalogueRow: {
     flexDirection: 'row',

@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -15,7 +14,7 @@ import { Ionicons } from '@react-native-vector-icons/ionicons/static';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { searchCatalog } from '../../../services/catalog/search.service';
 import { useCart } from '../../../features/cart/CartContext';
-import CartQuantityControl from '../../../components/cart/CartQuantityControl';
+import ProductCard from '../../../components/product/ProductCard';
 import colors from '../../../theme/colors';
 
 const sortOptions = [
@@ -148,57 +147,15 @@ export default function SearchScreen({ navigation, route }) {
       items.find(product => product.id === item.id)?.quantity || 0;
     const saved = favourites.some(product => product.id === item.id);
     return (
-      <Pressable onPress={() => openProduct(item)} style={styles.productCard}>
-        <View style={styles.visual}>
-          {item.images?.[0] ? (
-            <Image
-              source={{ uri: item.images[0] }}
-              resizeMode="contain"
-              style={styles.productImage}
-            />
-          ) : (
-            <Ionicons
-              name="cube-outline"
-              size={54}
-              color={colors.primaryLight}
-            />
-          )}
-          <Pressable onPress={() => toggleFavourite(item)} style={styles.heart}>
-            <Ionicons
-              name={saved ? 'heart' : 'heart-outline'}
-              size={18}
-              color={saved ? colors.accent : colors.primary}
-            />
-          </Pressable>
-          {item.discountPercent > 0 && (
-            <View style={styles.discount}>
-              <Text style={styles.discountText}>
-                {item.discountPercent}% OFF
-              </Text>
-            </View>
-          )}
-        </View>
-        <Text numberOfLines={2} style={styles.productName}>
-          {item.name}
-        </Text>
-        <Text numberOfLines={1} style={styles.category}>
-          {item.category}
-        </Text>
-        <View style={styles.priceRow}>
-          <Text style={styles.price}>{item.price}</Text>
-          {Boolean(item.oldPrice) && (
-            <Text style={styles.oldPrice}>{item.oldPrice}</Text>
-          )}
-        </View>
-        <View style={styles.ratingRow}><Ionicons name="star" size={12} color="#F4A900"/><Text style={styles.ratingText}>{Number(item.ratingAverage) ? Number(item.ratingAverage).toFixed(1) : 'New'}{Number(item.ratingCount) ? ` (${item.ratingCount})` : ''}</Text></View>
-        <CartQuantityControl
-          compact
-          quantity={quantity}
-          onIncrease={() => addToCart(item)}
-          onDecrease={() => updateQuantity(item.id, -1)}
-          style={styles.cartControl}
-        />
-      </Pressable>
+      <ProductCard
+        product={item}
+        onPress={() => openProduct(item)}
+        isFavourite={saved}
+        onToggleFavourite={() => toggleFavourite(item)}
+        quantity={quantity}
+        onIncrease={() => addToCart(item)}
+        onDecrease={() => updateQuantity(item.id, -1)}
+      />
     );
   };
   const header = (

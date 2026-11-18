@@ -303,7 +303,13 @@ export function AdminDataProvider({ children }) {
   const addProduct = async values => {
     const product = await productApi.createProduct(token, values);
     replaceProduct(product);
-    await refreshCategories();
+    setCategories(current =>
+      current.map(category =>
+        category.id === product.categoryId
+          ? {...category, products: String(Number(category.products) + 1)}
+          : category,
+      ),
+    );
   };
   const updateProduct = async (id, values, version) => {
     const product = await productApi.updateProduct(token, id, values, version);

@@ -11,6 +11,8 @@ const present = product => ({
   price: product.price,
   mrp: product.mrp || product.price,
   discountPercent: product.mrp > product.price ? Math.round(((product.mrp - product.price) / product.mrp) * 100) : 0,
+  ratingAverage: product.ratingAverage || 0,
+  ratingCount: product.ratingCount || 0,
   stock: product.stock,
   unit: product.unit,
   images: product.images || [],

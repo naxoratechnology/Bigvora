@@ -67,33 +67,40 @@ function PickerModal({ visible, title, items, onSelect, onClose }) {
       animationType="fade"
       onRequestClose={onClose}
     >
-      <Pressable onPress={onClose} style={styles.overlay}>
-        <Pressable style={styles.sheet}>
+      <View style={styles.overlay}>
+        <Pressable onPress={onClose} style={styles.backdrop} />
+        <View style={styles.sheet}>
           <View style={styles.sheetHead}>
             <Text style={styles.sheetTitle}>{title}</Text>
             <Pressable onPress={onClose}>
               <Ionicons name="close" size={22} color={colors.primary} />
             </Pressable>
           </View>
-          {items.map(item => (
-            <Pressable
-              key={item}
-              onPress={() => {
-                onSelect(item);
-                onClose();
-              }}
-              style={styles.option}
-            >
-              <Text style={styles.optionText}>{item}</Text>
-              <Ionicons
-                name="chevron-forward"
-                size={17}
-                color={colors.textMuted}
-              />
-            </Pressable>
-          ))}
-        </Pressable>
-      </Pressable>
+          <ScrollView
+            style={styles.optionList}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator
+          >
+            {items.map(item => (
+              <Pressable
+                key={item}
+                onPress={() => {
+                  onSelect(item);
+                  onClose();
+                }}
+                style={styles.option}
+              >
+                <Text style={styles.optionText}>{item}</Text>
+                <Ionicons
+                  name="chevron-forward"
+                  size={17}
+                  color={colors.textMuted}
+                />
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      </View>
     </Modal>
   );
 }
@@ -505,7 +512,9 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     backgroundColor: '#061A3A88',
   },
+  backdrop: { flex: 1 },
   sheet: {
+    maxHeight: '80%',
     padding: 20,
     paddingBottom: 30,
     borderTopLeftRadius: 25,
@@ -519,6 +528,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   sheetTitle: { color: colors.primary, fontSize: 18, fontWeight: '800' },
+  optionList: { flexShrink: 1 },
   option: {
     height: 49,
     flexDirection: 'row',

@@ -4,7 +4,7 @@ import { Ionicons } from '@react-native-vector-icons/ionicons/static';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCart } from '../../../features/cart/CartContext';
 import colors from '../../../theme/colors';
-import CartQuantityControl from '../../../components/cart/CartQuantityControl';
+import ProductCard from '../../../components/product/ProductCard';
 
 const productIcons = [
   'bag-handle',
@@ -229,82 +229,16 @@ function CategoryProductsScreen({ navigation, route }) {
 
         <View style={styles.grid}>
           {visibleProducts.map(product => (
-            <Pressable
+            <ProductCard
               key={product.id}
-              onPress={() => navigation.navigate('ProductDetails', { product })}
-              style={styles.productCard}
-            >
-              <View
-                style={[
-                  styles.productVisual,
-                  { backgroundColor: product.tint },
-                ]}
-              >
-                <Ionicons
-                  name={product.icon}
-                  size={60}
-                  color={colors.primaryLight}
-                />
-                <Pressable
-                  accessibilityLabel={`Save ${product.name}`}
-                  onPress={() => toggleFavourite(product)}
-                  style={styles.heartButton}
-                >
-                  <Ionicons
-                    name={
-                      favourites.some(item => item.id === product.id)
-                        ? 'heart'
-                        : 'heart-outline'
-                    }
-                    size={19}
-                    color={
-                      favourites.some(item => item.id === product.id)
-                        ? colors.accent
-                        : colors.primary
-                    }
-                  />
-                </Pressable>
-                {product.discountPercent > 0 && (
-                  <View style={styles.discountBadge}>
-                    <Text style={styles.discountBadgeText}>
-                      {product.discountPercent}% OFF
-                    </Text>
-                  </View>
-                )}
-              </View>
-              <Text numberOfLines={2} style={styles.productName}>
-                {product.name}
-              </Text>
-              <View style={styles.priceRow}>
-                <Text style={styles.price}>
-                  {'\u20B9'}
-                  {Number(product.priceValue).toLocaleString('en-IN')}
-                </Text>
-                {Boolean(product.oldPrice) && (
-                  <Text style={styles.oldPrice}>{product.oldPrice}</Text>
-                )}
-                {product.discountPercent > 0 && (
-                  <Text style={styles.discount}>
-                    {product.discountPercent}% off
-                  </Text>
-                )}
-              </View>
-              <View style={styles.ratingRow}>
-                <Ionicons name="star" size={12} color="#F4A900" />
-                <Text style={styles.rating}>
-                  {product.rating.toFixed(1)} · Free delivery over ₹499
-                </Text>
-              </View>
-              <CartQuantityControl
-                compact
-                quantity={
-                  items.find(item => item.id === product.id)?.quantity || 0
-                }
-                onIncrease={() => addToCart(product)}
-                onDecrease={() => updateQuantity(product.id, -1)}
-                style={styles.addButton}
-              />
-            </Pressable>
+              product={product}
+              onPress={() => navigation.navigate('ProductDetails', {product})}
+              isFavourite={favourites.some(item => item.id === product.id)}
+              onToggleFavourite={() => toggleFavourite(product)}
+              quantity={items.find(item => item.id === product.id)?.quantity || 0}
+              onIncrease={() => addToCart(product)}
+              onDecrease={() => updateQuantity(product.id, -1)}
+            />
           ))}
         </View>
         {!visibleProducts.length && (

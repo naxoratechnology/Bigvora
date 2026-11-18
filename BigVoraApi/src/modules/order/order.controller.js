@@ -147,6 +147,7 @@ async function checkout(req, res, next) {
           sku: p.sku,
           image: p.images?.[0] || "",
           unitPrice: p.price,
+          costPrice: p.costPrice,
           quantity: n,
           lineTotal: p.price * n,
         };

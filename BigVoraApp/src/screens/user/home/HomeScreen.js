@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCart } from '../../../features/cart/CartContext';
 import { request } from '../../../services/api/client';
 import colors from '../../../theme/colors';
-import CartQuantityControl from '../../../components/cart/CartQuantityControl';
+import ProductCard from '../../../components/product/ProductCard';
 import {
   FREE_DELIVERY_VALUE,
   MINIMUM_ORDER_VALUE,
@@ -425,75 +425,16 @@ function HomeScreen({ navigation }) {
         />
         <View style={styles.productGrid}>
           {products.map(product => (
-            <Pressable
+            <ProductCard
               key={product.id}
+              product={product}
               onPress={() => openProduct(product)}
-              style={styles.productCard}
-            >
-              <View
-                style={[
-                  styles.productVisual,
-                  { backgroundColor: product.tint },
-                ]}
-              >
-                {product.images?.[0] ? (
-                  <Image
-                    source={{ uri: product.images[0] }}
-                    resizeMode="contain"
-                    style={{ width: '100%', height: 100 }}
-                  />
-                ) : (
-                  <Ionicons
-                    name={product.icon}
-                    size={58}
-                    color={colors.primaryLight}
-                  />
-                )}
-                <Pressable
-                  accessibilityLabel={`Save ${product.name}`}
-                  onPress={() => toggleFavourite(product)}
-                  style={styles.heartButton}
-                >
-                  <Ionicons
-                    name={
-                      favourites.some(item => item.id === product.id)
-                        ? 'heart'
-                        : 'heart-outline'
-                    }
-                    size={19}
-                    color={
-                      favourites.some(item => item.id === product.id)
-                        ? colors.accent
-                        : colors.primary
-                    }
-                  />
-                </Pressable>
-                {product.discountPercent > 0 && (
-                  <View style={styles.discountBadge}>
-                    <Text style={styles.discountText}>
-                      {product.discountPercent}% OFF
-                    </Text>
-                  </View>
-                )}
-              </View>
-              <Text numberOfLines={2} style={styles.productName}>
-                {product.name}
-              </Text>
-              <View style={styles.priceRow}>
-                <Text style={styles.productPrice}>{product.price}</Text>
-                <Text style={styles.oldPrice}>{product.oldPrice}</Text>
-                {Number(product.ratingCount) > 0 && <View style={styles.cardRating}><Ionicons name="star" size={10} color="#F6A21A"/><Text style={styles.cardRatingText}>{Number(product.ratingAverage).toFixed(1)}</Text></View>}
-              </View>
-              <CartQuantityControl
-                compact
-                quantity={
-                  items.find(item => item.id === product.id)?.quantity || 0
-                }
-                onIncrease={() => addToCart(product)}
-                onDecrease={() => updateQuantity(product.id, -1)}
-                style={styles.addButton}
-              />
-            </Pressable>
+              isFavourite={favourites.some(item => item.id === product.id)}
+              onToggleFavourite={() => toggleFavourite(product)}
+              quantity={items.find(item => item.id === product.id)?.quantity || 0}
+              onIncrease={() => addToCart(product)}
+              onDecrease={() => updateQuantity(product.id, -1)}
+            />
           ))}
         </View>
 
@@ -513,50 +454,17 @@ function HomeScreen({ navigation }) {
           contentContainerStyle={styles.compactRow}
         >
           {[...products].reverse().map(product => (
-            <Pressable
+            <ProductCard
               key={`new-${product.id}`}
+              product={product}
               onPress={() => openProduct(product)}
-              style={styles.compactCard}
-            >
-              <View
-                style={[
-                  styles.compactVisual,
-                  { backgroundColor: product.tint },
-                ]}
-              >
-                {product.images?.[0] ? (
-                  <Image
-                    source={{ uri: product.images[0] }}
-                    resizeMode="contain"
-                    style={{ width: '100%', height: 100 }}
-                  />
-                ) : (
-                  <Ionicons
-                    name={product.icon}
-                    size={43}
-                    color={colors.primaryLight}
-                  />
-                )}
-                <View style={styles.newBadge}>
-                  <Text style={styles.newBadgeText}>NEW</Text>
-                </View>
-              </View>
-              <Text numberOfLines={1} style={styles.compactName}>
-                {product.name}
-              </Text>
-              <View style={styles.compactPriceRow}>
-                <Text style={styles.compactPrice}>{product.price}</Text>
-                {Number(product.ratingCount) > 0 && <View style={styles.cardRating}><Ionicons name="star" size={10} color="#F6A21A"/><Text style={styles.cardRatingText}>{Number(product.ratingAverage).toFixed(1)}</Text></View>}
-                {Boolean(product.oldPrice) && (
-                  <Text style={styles.compactOldPrice}>{product.oldPrice}</Text>
-                )}
-                {product.discountPercent > 0 && (
-                  <Text style={styles.compactDiscount}>
-                    {product.discountPercent}% off
-                  </Text>
-                )}
-              </View>
-            </Pressable>
+              isFavourite={favourites.some(item => item.id === product.id)}
+              onToggleFavourite={() => toggleFavourite(product)}
+              quantity={items.find(item => item.id === product.id)?.quantity || 0}
+              onIncrease={() => addToCart(product)}
+              onDecrease={() => updateQuantity(product.id, -1)}
+              horizontal
+            />
           ))}
         </ScrollView>
       </ScrollView>

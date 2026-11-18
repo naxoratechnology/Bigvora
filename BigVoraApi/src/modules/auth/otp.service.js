@@ -1,9 +1,10 @@
+const crypto=require('node:crypto');
 const AuthOtp=require('./otp.model');
 
 const validMobile=mobile=>typeof mobile==='string'&&/^\d{10}$/.test(mobile.trim());
 const supportedPurpose=purpose=>['login','register','reset'].includes(purpose);
 const otpError=(message,status=400)=>Object.assign(new Error(message),{status});
-const temporaryOtpEnabled=()=>process.env.OTP_MODE!=='2factor';
+const temporaryOtpEnabled=()=>process.env.OTP_MODE==='static';
 
 async function twoFactorRequest(endpoint,failureStatus=502){
  const response=await fetch(endpoint,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(15000)});
@@ -11,6 +12,15 @@ async function twoFactorRequest(endpoint,failureStatus=502){
  if(!response.ok||String(body.Status||body.status||'').toLowerCase()!=='success')throw otpError('OTP service request failed.',failureStatus);
  return body;
 }
+async function fast2smsRequest(mobile,code){
+ const key=process.env.FAST2SMS_API_KEY, senderId=process.env.FAST2SMS_SENDER_ID, messageId=process.env.FAST2SMS_MESSAGE_ID, entityId=process.env.FAST2SMS_ENTITY_ID;
+ if(!key||!senderId||!messageId||!entityId)throw otpError('OTP service is not configured.',503);
+ const response=await fetch('https://www.fast2sms.com/dev/bulkV2',{method:'POST',headers:{authorization:key,'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({route:'dlt_manual',sender_id:senderId,message:messageId,variables_values:code,flash:0,numbers:mobile,entity_id:entityId}),signal:AbortSignal.timeout(15000)});
+ let body={};try{body=await response.json();}catch{throw otpError('OTP service returned an invalid response.',502);}
+ if(!response.ok||body.return!==true)throw otpError(body.message||'OTP service request failed.',502);
+}
+const hashOtp=code=>crypto.createHash('sha256').update(`${code}:${process.env.OTP_SECRET||'bigvora-otp'}`).digest('hex');
+const generatedOtp=()=>String(crypto.randomInt(0,1000000)).padStart(6,'0');
 
 async function sendOtp(mobile,purpose){
  if(!validMobile(mobile))throw otpError('Enter a valid 10-digit mobile number.');
@@ -21,15 +31,10 @@ async function sendOtp(mobile,purpose){
   await AuthOtp.findOneAndUpdate({mobile:normalized,purpose},{$set:{providerSessionId:'temporary-static-otp',expiresAt:new Date(Date.now()+10*60*1000),attempts:0}},{upsert:true,new:true,setDefaultsOnInsert:true});
   return normalized;
  }
- const key=process.env.TWO_FACTOR_API_KEY;
- const template=process.env.TWO_FACTOR_OTP_TEMPLATE;
- if(!key||!template)throw otpError('OTP service is not configured.',503);
  const normalized=mobile.trim();
- const endpoint=`https://2factor.in/API/V1/${encodeURIComponent(key)}/SMS/${encodeURIComponent(`+91${normalized}`)}/AUTOGEN/${encodeURIComponent(template)}`;
- const result=await twoFactorRequest(endpoint);
- const providerSessionId=result.Details||result.details||result.session_id;
- if(typeof providerSessionId!=='string'||!providerSessionId)throw otpError('OTP service did not return a verification session.',502);
- await AuthOtp.findOneAndUpdate({mobile:normalized,purpose},{$set:{providerSessionId,expiresAt:new Date(Date.now()+10*60*1000),attempts:0}},{upsert:true,new:true,setDefaultsOnInsert:true});
+ const code=generatedOtp();
+ await fast2smsRequest(normalized,code);
+ await AuthOtp.findOneAndUpdate({mobile:normalized,purpose},{$set:{providerSessionId:'fast2sms',otpHash:hashOtp(code),expiresAt:new Date(Date.now()+Number(process.env.OTP_EXPIRY_MINUTES||5)*60*1000),attempts:0}},{upsert:true,new:true,setDefaultsOnInsert:true});
  return normalized;
 }
 
@@ -44,13 +49,7 @@ async function verifyOtp(mobile,purpose,code){
   if(code!=='123456'){record.attempts+=1;await record.save();throw otpError('Incorrect OTP. Please try again.');}
   await record.deleteOne();return true;
  }
- const key=process.env.TWO_FACTOR_API_KEY;
- if(!key)throw otpError('OTP service is not configured.',503);
- try{
-  const endpoint=`https://2factor.in/API/V1/${encodeURIComponent(key)}/SMS/VERIFY3/${encodeURIComponent(record.providerSessionId)}/${encodeURIComponent(code)}`;
-  await twoFactorRequest(endpoint,400);
- }catch(error){
-  if(error.status===502)throw error;
+ if(record.providerSessionId!=='fast2sms'||record.otpHash!==hashOtp(code)){
   record.attempts+=1;await record.save();throw otpError('Incorrect OTP. Please try again.');
  }
  await record.deleteOne();return true;

@@ -107,10 +107,10 @@ const list = handler(async (req, res) => {
   const Product = model();
   const [products, total] = await Promise.all([
     Product.find()
-      .populate("ruleIds")
       .sort({ createdAt: -1, _id: -1 })
       .skip((page - 1) * limit)
-      .limit(limit),
+      .limit(limit)
+      .lean(),
     Product.countDocuments(),
   ]);
   res.json({

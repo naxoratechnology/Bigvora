@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  FlatList,
   Image,
   Pressable,
   RefreshControl,
@@ -107,7 +108,12 @@ export default function AdminProductsScreen({ navigation }) {
         </Text>
       </View>
 
-      <ScrollView
+      <FlatList
+        data={productsError ? [] : visibleProducts}
+        keyExtractor={product => product.id}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={5}
         refreshControl={
           <RefreshControl
             refreshing={productsLoading}
@@ -121,15 +127,13 @@ export default function AdminProductsScreen({ navigation }) {
           !visibleProducts.length && styles.emptyList,
         ]}
         showsVerticalScrollIndicator={false}
-      >
-        {productsLoading && !products.length && (
+        ListEmptyComponent={
+          productsLoading && !products.length ? (
           <View style={styles.state}>
             <ActivityIndicator size={'large'} color={colors.accent} />
             <Text style={styles.stateText}>Loading products...</Text>
           </View>
-        )}
-
-        {Boolean(productsError) && !productsLoading && (
+          ) : productsError && !productsLoading ? (
           <View style={styles.state}>
             <View style={styles.errorIcon}>
               <Ionicons
@@ -144,9 +148,7 @@ export default function AdminProductsScreen({ navigation }) {
               <Text style={styles.retryText}>Try again</Text>
             </Pressable>
           </View>
-        )}
-
-        {!productsLoading && !productsError && !visibleProducts.length && (
+          ) : !productsLoading && !productsError ? (
           <View style={styles.state}>
             <View style={styles.emptyIcon}>
               <Ionicons
@@ -162,10 +164,9 @@ export default function AdminProductsScreen({ navigation }) {
                 : 'No products match this stock status.'}
             </Text>
           </View>
-        )}
-
-        {!productsError &&
-          visibleProducts.map(product => {
+          ) : null
+        }
+        renderItem={({item: product}) => {
             const image = product.images?.[0] || product.image;
             const statusStyle =
               product.status === 'In stock'
@@ -228,8 +229,8 @@ export default function AdminProductsScreen({ navigation }) {
                 </View>
               </Pressable>
             );
-          })}
-      </ScrollView>
+          }}
+      />
     </SafeAreaView>
   );
 }
