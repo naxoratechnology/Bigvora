@@ -13,9 +13,9 @@ async function twoFactorRequest(endpoint,failureStatus=502){
  return body;
 }
 async function fast2smsRequest(mobile,code){
- const key=process.env.FAST2SMS_API_KEY, senderId=process.env.FAST2SMS_SENDER_ID, messageId=process.env.FAST2SMS_MESSAGE_ID, entityId=process.env.FAST2SMS_ENTITY_ID;
- if(!key||!senderId||!messageId||!entityId)throw otpError('OTP service is not configured.',503);
- const response=await fetch('https://www.fast2sms.com/dev/bulkV2',{method:'POST',headers:{authorization:key,'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({route:'dlt_manual',sender_id:senderId,message:messageId,variables_values:code,flash:0,numbers:mobile,entity_id:entityId}),signal:AbortSignal.timeout(15000)});
+ const key=process.env.FAST2SMS_API_KEY, senderId=process.env.FAST2SMS_SENDER_ID, messageId=process.env.FAST2SMS_MESSAGE_ID;
+ if(!key||!senderId||!messageId)throw otpError('OTP service is not configured.',503);
+ const response=await fetch('https://www.fast2sms.com/dev/bulkV2',{method:'POST',headers:{authorization:key,'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({route:'dlt',sender_id:senderId,message:messageId,variables_values:code,numbers:mobile}),signal:AbortSignal.timeout(15000)});
  let body={};try{body=await response.json();}catch{throw otpError('OTP service returned an invalid response.',502);}
  if(!response.ok||body.return!==true)throw otpError(body.message||'OTP service request failed.',502);
 }
