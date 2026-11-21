@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Image,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -33,6 +34,48 @@ function SectionHeader({ title, onPress }) {
   );
 }
 
+function HomeSkeleton() {
+  return (
+    <ScrollView contentContainerStyle={styles.skeletonContent} scrollEnabled={false}>
+      <View style={styles.skeletonHeader}>
+        <View style={styles.skeletonLogo} />
+        <View style={styles.skeletonHeaderText}>
+          <View style={[styles.skeletonLine, styles.skeletonSmallLine]} />
+          <View style={[styles.skeletonLine, styles.skeletonLocationLine]} />
+        </View>
+        <View style={styles.skeletonCircle} />
+      </View>
+      <View style={styles.skeletonSearch} />
+      <View style={styles.skeletonBanner} />
+      <View style={styles.skeletonSectionRow}>
+        <View style={[styles.skeletonLine, styles.skeletonSectionLine]} />
+        <View style={[styles.skeletonLine, styles.skeletonTinyLine]} />
+      </View>
+      <View style={styles.skeletonCategories}>
+        {Array.from({length: 5}).map((_, index) => (
+          <View key={index} style={styles.skeletonCategory}>
+            <View style={styles.skeletonCategoryIcon} />
+            <View style={[styles.skeletonLine, styles.skeletonCategoryLine]} />
+          </View>
+        ))}
+      </View>
+      <View style={styles.skeletonSectionRow}>
+        <View style={[styles.skeletonLine, styles.skeletonSectionLine]} />
+        <View style={[styles.skeletonLine, styles.skeletonTinyLine]} />
+      </View>
+      <View style={styles.skeletonGrid}>
+        {Array.from({length: 4}).map((_, index) => (
+          <View key={index} style={styles.skeletonCard}>
+            <View style={styles.skeletonCardImage} />
+            <View style={[styles.skeletonLine, styles.skeletonNameLine]} />
+            <View style={[styles.skeletonLine, styles.skeletonPriceLine]} />
+          </View>
+        ))}
+      </View>
+    </ScrollView>
+  );
+}
+
 function HomeScreen({ navigation }) {
   const {
     items,
@@ -51,8 +94,10 @@ function HomeScreen({ navigation }) {
   const [priceFilter, setPriceFilter] = useState('All');
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
+  const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState('');
   const loadCatalog = async () => {
+    setCatalogLoading(true);
     try {
       const data = await request('/catalog/home');
       setCategories(
@@ -91,6 +136,8 @@ function HomeScreen({ navigation }) {
       setCatalogError('');
     } catch (e) {
       setCatalogError(e.message);
+    } finally {
+      setCatalogLoading(false);
     }
   };
   useEffect(() => {
@@ -108,6 +155,17 @@ function HomeScreen({ navigation }) {
         : product.priceValue < 1500);
     return matchesSearch && matchesPrice;
   });
+  const favouriteIds = useMemo(
+    () => new Set(favourites.map(product => product.id)),
+    [favourites],
+  );
+  const cartQuantities = useMemo(
+    () => new Map(items.map(item => [item.id, item.quantity])),
+    [items],
+  );
+  const popularProducts = useMemo(() => products.slice(0, 12), [products]);
+  const newProducts = useMemo(() => products.slice(-10).reverse(), [products]);
+  const homeCategories = useMemo(() => categories.slice(0, 12), [categories]);
 
   const openCategories = () => navigation.getParent()?.navigate('Categories');
   const openProduct = product =>
@@ -136,9 +194,20 @@ function HomeScreen({ navigation }) {
     setActiveBanner(Math.round(event.nativeEvent.contentOffset.x / width));
   };
 
+  if (catalogLoading && !products.length) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <HomeSkeleton />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
+        removeClippedSubviews={Platform.OS === 'android'}
+        nestedScrollEnabled={false}
+        overScrollMode="never"
         contentContainerStyle={styles.pageContent}
         showsVerticalScrollIndicator={false}
       >
@@ -297,6 +366,8 @@ function HomeScreen({ navigation }) {
                   <Image
                     source={{ uri: banner.image }}
                     resizeMode="cover"
+                    resizeMethod="resize"
+                    fadeDuration={0}
                     style={styles.bannerImage}
                   />
                 )}
@@ -375,7 +446,7 @@ function HomeScreen({ navigation }) {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoriesRow}
         >
-          {categories.map(category => (
+          {homeCategories.map(category => (
             <Pressable
               key={category.id}
               onPress={() =>
@@ -396,6 +467,8 @@ function HomeScreen({ navigation }) {
                 {category.image ? (
                   <Image
                     source={{ uri: category.image }}
+                    resizeMethod="resize"
+                    fadeDuration={0}
                     style={{ width: 54, height: 54, borderRadius: 16 }}
                   />
                 ) : (
@@ -424,14 +497,14 @@ function HomeScreen({ navigation }) {
           }
         />
         <View style={styles.productGrid}>
-          {products.map(product => (
+          {popularProducts.map(product => (
             <ProductCard
               key={product.id}
               product={product}
               onPress={() => openProduct(product)}
-              isFavourite={favourites.some(item => item.id === product.id)}
+              isFavourite={favouriteIds.has(product.id)}
               onToggleFavourite={() => toggleFavourite(product)}
-              quantity={items.find(item => item.id === product.id)?.quantity || 0}
+              quantity={cartQuantities.get(product.id) || 0}
               onIncrease={() => addToCart(product)}
               onDecrease={() => updateQuantity(product.id, -1)}
             />
@@ -453,14 +526,14 @@ function HomeScreen({ navigation }) {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.compactRow}
         >
-          {[...products].reverse().map(product => (
+          {newProducts.map(product => (
             <ProductCard
               key={`new-${product.id}`}
               product={product}
               onPress={() => openProduct(product)}
-              isFavourite={favourites.some(item => item.id === product.id)}
+              isFavourite={favouriteIds.has(product.id)}
               onToggleFavourite={() => toggleFavourite(product)}
-              quantity={items.find(item => item.id === product.id)?.quantity || 0}
+              quantity={cartQuantities.get(product.id) || 0}
               onIncrease={() => addToCart(product)}
               onDecrease={() => updateQuantity(product.id, -1)}
               horizontal
@@ -526,6 +599,28 @@ function HomeScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  skeletonContent: {padding: 20, paddingBottom: 80},
+  skeletonHeader: {flexDirection: 'row', alignItems: 'center', height: 58},
+  skeletonLogo: {width: 46, height: 46, borderRadius: 15, backgroundColor: '#E8EDF4'},
+  skeletonHeaderText: {flex: 1, marginLeft: 10},
+  skeletonCircle: {width: 43, height: 43, borderRadius: 14, backgroundColor: '#E8EDF4'},
+  skeletonSearch: {height: 52, marginTop: 14, borderRadius: 16, backgroundColor: '#E8EDF4'},
+  skeletonBanner: {height: 170, marginTop: 20, borderRadius: 24, backgroundColor: '#E8EDF4'},
+  skeletonSectionRow: {flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 25, marginBottom: 14},
+  skeletonLine: {height: 10, borderRadius: 5, backgroundColor: '#E8EDF4'},
+  skeletonSmallLine: {width: 58},
+  skeletonLocationLine: {width: 105, height: 13, marginTop: 7},
+  skeletonSectionLine: {width: 145, height: 18},
+  skeletonTinyLine: {width: 45},
+  skeletonCategories: {flexDirection: 'row', justifyContent: 'space-between'},
+  skeletonCategory: {alignItems: 'center', width: 58},
+  skeletonCategoryIcon: {width: 58, height: 58, borderRadius: 18, backgroundColor: '#E8EDF4'},
+  skeletonCategoryLine: {width: 48, height: 8, marginTop: 8},
+  skeletonGrid: {flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between'},
+  skeletonCard: {width: '48%', height: 220, marginBottom: 14, paddingBottom: 12, borderRadius: 18, backgroundColor: colors.background},
+  skeletonCardImage: {height: 138, borderRadius: 18, backgroundColor: '#E8EDF4'},
+  skeletonNameLine: {width: '75%', marginTop: 14, marginHorizontal: 11},
+  skeletonPriceLine: {width: '42%', marginTop: 10, marginHorizontal: 11},
   pageContent: { paddingBottom: 205 },
   deliveryPrompt: {
     position: 'absolute',

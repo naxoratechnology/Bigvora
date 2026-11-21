@@ -79,12 +79,12 @@ body{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Ari
 /* Logo is the main hero, fully contained */
 .logoWrap{
  position:absolute;left:50%;top:47%;z-index:8;
- width:min(82vw,720px);max-height:47vh;
+ width:min(70vw,620px);max-height:40vh;
  transform:translate(-50%,-50%);
  display:flex;align-items:center;justify-content:center;
 }
 .logo{
- width:100%;height:auto;max-height:47vh;object-fit:contain;
+ width:100%;height:auto;max-height:40vh;object-fit:contain;
  opacity:0;transform:translateY(35px) scale(.62);
  filter:blur(14px) brightness(1.35) drop-shadow(0 0 0 transparent);
  animation:logoIn 1.75s cubic-bezier(.13,.88,.17,1) 1.05s forwards;
@@ -111,7 +111,7 @@ body{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Ari
 .tagline{
  position:absolute;left:50%;top:76%;z-index:14;width:94%;
  text-align:center;transform:translate(-50%,24px) scale(.88);opacity:0;
- font-size:clamp(19px,5.6vw,50px);line-height:1.08;font-weight:850;
+ font-size:clamp(17px,5vw,44px);line-height:1.08;font-weight:850;
  letter-spacing:.045em;color:#fff;
  text-shadow:0 4px 28px rgba(0,0,0,.8);
  animation:tag 1.2s cubic-bezier(.16,1,.3,1) 2.95s forwards;
@@ -141,9 +141,9 @@ body{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Ari
 /* Mobile-safe positioning */
 @media (max-aspect-ratio:9/16){
  .welcome{top:8.5%}
- .logoWrap{top:45%;max-height:43vh}
- .logo{max-height:43vh}
- .tagline{top:72.5%;font-size:clamp(18px,5.7vw,42px)}
+ .logoWrap{top:45%;max-height:38vh}
+ .logo{max-height:38vh}
+ .tagline{top:72.5%;font-size:clamp(17px,5.2vw,39px)}
  .footer{bottom:7.5%}
 }
 

@@ -115,7 +115,9 @@ export default function CartScreen({ navigation }) {
           </View>
           <View style={styles.deliveryCopy}>
             <Text style={styles.deliveryTitle}>
-              {freeDeliveryRemaining
+              {minimumOrderRemaining
+                ? `Add ${money(minimumOrderRemaining)} more to checkout`
+                : freeDeliveryRemaining
                 ? `Add ${money(
                     freeDeliveryRemaining,
                   )} more to get FREE delivery`
@@ -128,16 +130,24 @@ export default function CartScreen({ navigation }) {
                   {
                     width: `${Math.min(
                       100,
-                      (subtotal / FREE_DELIVERY_VALUE) * 100,
+                      (subtotal /
+                        (minimumOrderRemaining
+                          ? MINIMUM_ORDER_VALUE
+                          : FREE_DELIVERY_VALUE)) *
+                        100,
                     )}%`,
                   },
                 ]}
               />
             </View>
-            {minimumOrderRemaining > 0 && (
+            {minimumOrderRemaining > 0 ? (
               <Text style={styles.minimumText}>
                 Minimum order is {money(MINIMUM_ORDER_VALUE)} · Add{' '}
                 {money(minimumOrderRemaining)} to checkout
+              </Text>
+            ) : (
+              <Text style={styles.minimumText}>
+                Minimum order reached · Checkout is available
               </Text>
             )}
           </View>

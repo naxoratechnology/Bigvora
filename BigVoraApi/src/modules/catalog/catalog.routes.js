@@ -5,7 +5,7 @@ const Product=()=>require('../product/product.model');
 const Category=()=>require('../category/category.model');
 const ProductRule=()=>require('../productRule/product-rule.model');
 const escapeRegex=value=>value.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-const productFields='name category categoryId description price mrp stock unit images ruleIds ratingAverage ratingCount createdAt';
+const productFields='name category categoryId description price mrp stock unit images ratingAverage ratingCount createdAt';
 const productPopulate={path:'ruleIds',match:{isActive:true},select:'title description icon'};
 const presentRules=rules=>rules.map(rule=>({id:String(rule._id),title:rule.title,description:rule.description,icon:rule.icon}));
 const presentProduct=(x,rules=[])=>({id:String(x._id),name:x.name,category:x.category,categoryId:x.categoryId?String(x.categoryId):null,description:x.description,price:x.price,mrp:x.mrp||x.price,discountPercent:x.mrp>x.price?Math.round(((x.mrp-x.price)/x.mrp)*100):0,stock:x.stock,unit:x.unit,images:x.images||[],ratingAverage:x.ratingAverage||0,ratingCount:x.ratingCount||0,rules:presentRules(rules)});
@@ -13,7 +13,7 @@ const number=(value,name,{min=0,max=1000000000,integer=false}={})=>{if(value===u
 
 router.get('/rules',async(req,res,next)=>{try{const rules=await ProductRule().find({isActive:true}).sort({createdAt:-1}).select('title description icon').lean();res.json({success:true,data:{rules:presentRules(rules)}});}catch(error){next(error);}});
 
-router.get('/home',async(req,res,next)=>{try{const[categories,products,banners,rules]=await Promise.all([Category().find().sort({nameKey:1}).select('name image').lean(),Product().find().populate(productPopulate).sort({createdAt:-1}).limit(100).select(productFields).lean(),require('../banner/banner.model').find().sort({createdAt:-1}).select('name title image').lean(),ProductRule().find({isActive:true}).sort({createdAt:-1}).select('title description icon').lean()]);res.json({success:true,data:{categories:categories.map(x=>({id:String(x._id),name:x.name,image:x.image||null})),products:products.map(product=>presentProduct(product,rules)),banners:banners.map(item=>({id:String(item._id),name:item.name||item.title||'Banner',image:item.image}))}});}catch(error){next(error);}});
+router.get('/home',async(req,res,next)=>{try{const[categories,products,banners]=await Promise.all([Category().find().sort({nameKey:1}).select('name image').lean(),Product().find().sort({createdAt:-1}).limit(100).select(productFields).lean(),require('../banner/banner.model').find().sort({createdAt:-1}).select('name title image').lean()]);res.json({success:true,data:{categories:categories.map(x=>({id:String(x._id),name:x.name,image:x.image||null})),products:products.map(product=>presentProduct(product)),banners:banners.map(item=>({id:String(item._id),name:item.name||item.title||'Banner',image:item.image}))}});}catch(error){next(error);}});
 
 router.get('/search',async(req,res,next)=>{try{
  const query=typeof req.query.q==='string'?req.query.q.trim().slice(0,100):'';const categoryId=typeof req.query.categoryId==='string'?req.query.categoryId:'';const sort=typeof req.query.sort==='string'?req.query.sort:'relevance';const inStock=req.query.inStock==='true';const minPrice=number(req.query.minPrice,'minimum price');const maxPrice=number(req.query.maxPrice,'maximum price');const page=number(req.query.page,'page',{min:1,max:10000,integer:true})||1;const limit=number(req.query.limit,'limit',{min:1,max:40,integer:true})||20;

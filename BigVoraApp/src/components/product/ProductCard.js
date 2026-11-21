@@ -6,7 +6,7 @@ import colors from '../../theme/colors';
 
 const money = value => `\u20B9${Number(value).toLocaleString('en-IN')}`;
 
-export default function ProductCard({
+function ProductCard({
   product,
   onPress,
   isFavourite,
@@ -36,6 +36,8 @@ export default function ProductCard({
           <Image
             source={{uri: product.images[0]}}
             resizeMode="contain"
+            resizeMethod="resize"
+            fadeDuration={0}
             style={styles.image}
           />
         ) : (
@@ -88,6 +90,13 @@ export default function ProductCard({
     </Pressable>
   );
 }
+
+export default React.memo(ProductCard, (previous, next) =>
+  previous.product === next.product &&
+  previous.isFavourite === next.isFavourite &&
+  previous.quantity === next.quantity &&
+  previous.horizontal === next.horizontal,
+);
 
 const styles = StyleSheet.create({
   card: {
